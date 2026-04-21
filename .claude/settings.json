@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -r docker stop)",
+      "Bash(docker run *)",
+      "Bash(curl -s -i -H \"Origin: http://localhost:3000\" http://localhost:8042/dicom-web/studies)",
+      "Bash(docker rm *)",
+      "Bash(curl -sf -o /dev/null http://localhost:8043/dicom-web/studies)",
+      "Bash(curl -s -i -X OPTIONS -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: GET\" http://localhost:8043/dicom-web/studies)",
+      "Bash(curl -s -i -H \"Origin: http://localhost:3000\" http://localhost:8043/dicom-web/studies)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/private/tmp"
+    ]
+  }
+}
