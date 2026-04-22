@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   presets: [require('../ui/tailwind.config.js')],
   content: [
     './pages/**/*.{ts,tsx}',
@@ -99,20 +100,6 @@ module.exports = {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-      },
-      bkg: {
-        low: '#050615',
-        med: '#090C29',
-        full: '#041C4A',
-      },
-      info: {
-        primary: '#FFFFFF',
-        secondary: '#7BB2CE',
-      },
-      actions: {
-        primary: '#348CFD',
-        highlight: '#5ACCE6',
-        hover: 'rgba(52, 140, 253, 0.2)',
       },
     },
   },

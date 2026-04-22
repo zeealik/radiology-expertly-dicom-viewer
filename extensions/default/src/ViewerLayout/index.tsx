@@ -6,6 +6,7 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
+import SubmitFeedbackButton from './SubmitFeedbackButton';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -216,6 +217,7 @@ function ViewerLayout({
             ) : null}
           </ResizablePanelGroup>
         </React.Fragment>
+        <SubmitFeedbackButton />
       </div>
       <Onboarding tours={customizationService.getCustomization('ohif.tours')} />
       <InvestigationalUseDialog dialogConfiguration={appConfig?.investigationalUseDialog} />

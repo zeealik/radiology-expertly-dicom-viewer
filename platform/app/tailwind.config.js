@@ -6,6 +6,7 @@ module.exports = {
   // ...(process.env.NODE_ENV === 'development' && {
   //   safelist: [{ pattern: /.*/ }],
   // }),
+  darkMode: 'class',
   presets: [require('../ui/tailwind.config.js'), require('../ui-next/tailwind.config.js')],
   content: [
     './src/**/*.{jsx,js,ts,tsx, css}',
@@ -20,7 +21,7 @@ module.exports = {
   theme: {
     fontFamily: {
       sans: [
-        'Inter',
+        'Roboto',
         'system-ui',
         '-apple-system',
         'BlinkMacSystemFont',

@@ -7,7 +7,7 @@
 
 @layer base {
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans, 'Roboto', system-ui, sans-serif);
   }
 }
 
@@ -31,74 +31,114 @@
 
 @layer base {
   :root {
-    --highlight: 191 74% 63%;
-    --neutral: 213 22% 59%;
-    --background: 236 62% 5%;
-    --foreground: 0 0% 98%;
-    --card: 236 62% 5%;
-    --card-foreground: 0 0% 98%;
-    --popover: 219 90% 15%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 214 98% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 214 66% 48%;
-    --secondary-foreground: 200 50% 84%;
-    --muted: 234 64% 10%;
-    --muted-foreground: 200 46% 65%;
-    --accent: 217 79% 24%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 236 52% 30%;
-    --ring: 214 98% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --font-sans: 'Roboto', system-ui, sans-serif;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
     --radius: 0.5rem;
-    --success-bg: hsl(143, 85%, 96%);
-    --success-border: hsl(145, 92%, 91%);
-    --success-text: hsl(140, 100%, 27%);
 
-    --info-bg: hsl(208, 100%, 97%);
-    --info-border: hsl(221, 91%, 91%);
-    --info-text: hsl(210, 92%, 45%);
+    --form-background: 0 0% 100%;
+    --form-border: 214.3 31.8% 91.4%;
+    --form-text: 222.2 84% 4.9%;
+    --form-text-muted: 215.4 16.3% 46.9%;
+    --form-input-background: 0 0% 100%;
+    --form-input-border: 214.3 31.8% 91.4%;
+    --form-input-focus: 199 89% 48%;
 
-    --warning-bg: hsl(49, 100%, 97%);
-    --warning-border: hsl(49, 91%, 91%);
-    --warning-text: hsl(31, 92%, 45%);
+    --highlight: 199 89% 48%;
+    --neutral: 220 9% 65%;
 
-    --error-bg: hsl(359, 100%, 97%);
-    --error-border: hsl(359, 100%, 94%);
-    --error-text: hsl(360, 100%, 45%);
+    --chart-1: 199 89% 48%;
+    --chart-2: 199 89% 60%;
+    --chart-3: 215 70% 55%;
+    --chart-4: 190 70% 45%;
+    --chart-5: 210 50% 40%;
+
+    --success-bg: hsl(160, 60%, 96%);
+    --success-border: hsl(160, 70%, 88%);
+    --success-text: hsl(160, 84%, 30%);
+
+    --info-bg: hsl(199, 89%, 96%);
+    --info-border: hsl(199, 89%, 88%);
+    --info-text: hsl(199, 89%, 40%);
+
+    --warning-bg: hsl(38, 100%, 96%);
+    --warning-border: hsl(38, 92%, 88%);
+    --warning-text: hsl(30, 92%, 40%);
+
+    --error-bg: hsl(0, 84%, 96%);
+    --error-border: hsl(0, 84%, 90%);
+    --error-text: hsl(0, 84%, 45%);
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 214 98% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 236 52% 30%;
-    --ring: 214 98% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 220 13% 18%;
+    --foreground: 220 9% 85%;
+    --card: 220 13% 22%;
+    --card-foreground: 220 9% 85%;
+    --popover: 220 13% 22%;
+    --popover-foreground: 220 9% 85%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 220 13% 18%;
+    --secondary: 220 13% 25%;
+    --secondary-foreground: 220 9% 85%;
+    --muted: 220 13% 25%;
+    --muted-foreground: 220 9% 65%;
+    --accent: 220 13% 25%;
+    --accent-foreground: 220 9% 85%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 220 13% 18%;
+    --border: 220 13% 35%;
+    --input: 220 13% 35%;
+    --ring: 199 89% 48%;
+
+    --form-background: 220 13% 22%;
+    --form-border: 220 13% 35%;
+    --form-text: 220 9% 85%;
+    --form-text-muted: 220 9% 65%;
+    --form-input-background: 220 13% 18%;
+    --form-input-border: 220 13% 35%;
+    --form-input-focus: 199 89% 48%;
+
+    --highlight: 199 89% 48%;
+    --neutral: 220 9% 65%;
+
+    --chart-1: 199 89% 48%;
+    --chart-2: 199 89% 60%;
+    --chart-3: 215 70% 55%;
+    --chart-4: 190 70% 45%;
+    --chart-5: 210 50% 40%;
+
+    --success-bg: hsl(160, 30%, 18%);
+    --success-border: hsl(160, 30%, 30%);
+    --success-text: hsl(160, 70%, 65%);
+
+    --info-bg: hsl(199, 30%, 18%);
+    --info-border: hsl(199, 30%, 30%);
+    --info-text: hsl(199, 89%, 65%);
+
+    --warning-bg: hsl(38, 30%, 18%);
+    --warning-border: hsl(38, 30%, 30%);
+    --warning-text: hsl(38, 92%, 65%);
+
+    --error-bg: hsl(0, 30%, 18%);
+    --error-border: hsl(0, 30%, 30%);
+    --error-text: hsl(0, 84%, 70%);
   }
 }

@@ -5,6 +5,7 @@ module.exports = {
   // ...(process.env.NODE_ENV === 'development' && {
   //   safelist: [{ pattern: /.*/ }],
   // }),
+  darkMode: 'class',
   content: ['./src/**/*.{jsx,js,ts,tsx,css,mdx}'],
   theme: {
     screens: {
@@ -29,49 +30,49 @@ module.exports = {
       },
 
       primary: {
-        light: '#5acce6',
-        main: '#0944b3',
-        dark: '#090c29',
-        active: '#348cfd',
+        light: 'hsl(199 89% 60%)',
+        main: 'hsl(199 89% 48%)',
+        dark: 'hsl(199 89% 36%)',
+        active: 'hsl(199 89% 48%)',
       },
       inputfield: {
-        main: '#3a3f99',
-        disabled: '#2b166b',
-        focus: '#5acce6',
-        placeholder: '#39383f',
+        main: 'hsl(var(--input))',
+        disabled: 'hsl(var(--muted))',
+        focus: 'hsl(var(--ring))',
+        placeholder: 'hsl(var(--muted-foreground))',
       },
 
       secondary: {
-        light: '#3a3f99',
-        main: '#2b166b',
-        dark: '#041c4a',
-        active: '#1f1f27',
+        light: 'hsl(220 13% 35%)',
+        main: 'hsl(220 13% 25%)',
+        dark: 'hsl(220 13% 18%)',
+        active: 'hsl(220 13% 22%)',
       },
 
       indigo: {
-        dark: '#0b1a42',
+        dark: 'hsl(220 13% 14%)',
       },
 
       common: {
-        bright: '#e1e1e1',
-        light: '#a19fad',
-        main: '#fff',
-        dark: '#726f7e',
-        active: '#2c3074',
+        bright: 'hsl(220 9% 85%)',
+        light: 'hsl(220 9% 65%)',
+        main: 'hsl(220 9% 98%)',
+        dark: 'hsl(220 9% 45%)',
+        active: 'hsl(220 9% 55%)',
       },
       bkg: {
-        low: '#050615',
-        med: '#090C29',
-        full: '#041C4A',
+        low: 'hsl(220 13% 14%)',
+        med: 'hsl(220 13% 18%)',
+        full: 'hsl(220 13% 22%)',
       },
       info: {
-        primary: '#FFFFFF',
-        secondary: '#7BB2CE',
+        primary: 'hsl(220 9% 98%)',
+        secondary: 'hsl(199 89% 60%)',
       },
       actions: {
-        primary: '#348CFD',
-        highlight: '#5ACCE6',
-        hover: 'rgba(52, 140, 253, 0.2)',
+        primary: 'hsl(199 89% 48%)',
+        highlight: 'hsl(199 89% 60%)',
+        hover: 'hsla(199, 89%, 48%, 0.2)',
       },
       customgreen: {
         100: '#05D97C',
