@@ -9,7 +9,7 @@ applications:
             - yarn install --frozen-lockfile
         build:
           commands:
-            - APP_CONFIG=config/radiologyexpertly.js PUBLIC_URL=/ yarn build
+            - NODE_ENV=production APP_CONFIG=config/radiologyexpertly.js PUBLIC_URL=/ yarn workspace @ohif/app build
       artifacts:
         baseDirectory: platform/app/dist
         files:
