@@ -47,6 +47,7 @@ declare global {
       capture: (screenX: number, screenY: number, timestamp?: number) => GazeRecord | null;
       captureJson: (screenX: number, screenY: number, timestamp?: number) => string | null;
       getRegisteredViewports: () => string[];
+      isReady: () => boolean;
     };
     receiveGazePoint?: (screenX: number, screenY: number, timestamp?: number) => GazeRecord | null;
   }
@@ -228,6 +229,7 @@ export function installAndroidGazeBridge() {
       return record ? JSON.stringify(record) : null;
     },
     getRegisteredViewports: () => Array.from(registeredViewports.keys()),
+    isReady: () => registeredViewports.size > 0,
   };
 
   window.receiveGazePoint = capture;

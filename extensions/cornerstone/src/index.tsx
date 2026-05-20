@@ -59,6 +59,7 @@ import utils from './utils';
 import { useMeasurementTracking } from './hooks/useMeasurementTracking';
 import { setUpSegmentationEventHandlers } from './utils/setUpSegmentationEventHandlers';
 import { setUpAnnotationEventHandlers } from './utils/setUpAnnotationEventHandlers';
+import { installAndroidGazeBridge } from './utils/androidGazeBridge';
 import update from 'immutability-helper';
 export * from './components';
 
@@ -101,11 +102,9 @@ const cornerstoneExtension: Types.Extensions.Extension = {
    */
   id,
 
-  onModeEnter: ({
-    servicesManager,
-    commandsManager,
-    extensionManager,
-  }: withAppTypes): void => {
+  onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
+    installAndroidGazeBridge();
+
     const { cornerstoneViewportService, toolbarService, segmentationService } =
       servicesManager.services;
 
@@ -151,7 +150,10 @@ const cornerstoneExtension: Types.Extensions.Extension = {
      */
     const sourceConfig = extensionManager?.getActiveDataSource?.()?.[0]?.getConfig?.() ?? {};
     const config = sourceConfig.stackRetrieveOptions ?? {};
-    const stackOptions = update(DEFAULT_STACK_RETRIEVE_OPTIONS, toUpdateSpec(config)) as typeof DEFAULT_STACK_RETRIEVE_OPTIONS;
+    const stackOptions = update(
+      DEFAULT_STACK_RETRIEVE_OPTIONS,
+      toUpdateSpec(config)
+    ) as typeof DEFAULT_STACK_RETRIEVE_OPTIONS;
     imageRetrieveMetadataProvider.add('stack', stackOptions);
   },
   getPanelModule,
