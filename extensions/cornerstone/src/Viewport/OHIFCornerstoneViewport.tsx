@@ -17,6 +17,10 @@ import { getViewportPresentations } from '../utils/presentations/getViewportPres
 import { useSynchronizersStore } from '../stores/useSynchronizersStore';
 import ActiveViewportBehavior from '../utils/ActiveViewportBehavior';
 import { WITH_NAVIGATION } from '../services/ViewportService/CornerstoneViewportService';
+import {
+  registerAndroidGazeViewport,
+  unregisterAndroidGazeViewport,
+} from '../utils/androidGazeBridge';
 
 const STACK = 'stack';
 
@@ -197,6 +201,7 @@ const OHIFCornerstoneViewport = React.memo(
     // disable the element upon unmounting
     useEffect(() => {
       cornerstoneViewportService.enableViewport(viewportId, elementRef.current);
+      registerAndroidGazeViewport(servicesManager, viewportId, elementRef.current);
 
       eventTarget.addEventListener(Enums.Events.ELEMENT_ENABLED, elementEnabledHandler);
 
@@ -204,6 +209,7 @@ const OHIFCornerstoneViewport = React.memo(
 
       return () => {
         const viewportInfo = cornerstoneViewportService.getViewportInfo(viewportId);
+        unregisterAndroidGazeViewport(viewportId);
 
         if (!viewportInfo) {
           return;
