@@ -19,13 +19,7 @@ Orthanc doesn't handle CORS preflight (`OPTIONS`) requests itself, so nginx sits
 ### 1. Start Orthanc (DICOM server)
 
 ```bash
-docker run -d -p 4242:4242 -p 8042:8042 \
-  -e ORTHANC__AUTHENTICATION_ENABLED=false \
-  -e ORTHANC__REMOTE_ACCESS_ALLOWED=true \
-  -e ORTHANC__DICOM_WEB__ENABLE=true \
-  -e ORTHANC__DICOM_WEB__ROOT=/dicom-web/ \
-  --name orthanc-ohif \
-  orthancteam/orthanc
+yarn orthanc:server
 ```
 
 Verify: `curl http://localhost:8042/dicom-web/studies` → should return `[]`.
