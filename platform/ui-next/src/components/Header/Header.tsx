@@ -1,5 +1,4 @@
 import React, { ReactNode } from 'react';
-import classNames from 'classnames';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -60,18 +59,21 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[48px] items-center">
+        <div className="relative h-[56px] items-center">
           <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center">
-            <div
-              className={classNames(
-                'mr-3 inline-flex items-center',
-                isReturnEnabled && 'cursor-pointer'
+            <div className="mr-3 inline-flex items-center">
+              {isReturnEnabled && (
+                <button
+                  type="button"
+                  className="text-primary hover:bg-muted focus-visible:ring-ring flex h-12 w-[72px] cursor-pointer items-center justify-center rounded focus-visible:outline-none focus-visible:ring-1"
+                  onClick={onClickReturn}
+                  aria-label="Return to work list"
+                  data-cy="return-to-work-list"
+                >
+                  <Icons.ArrowLeftBold className="h-10 w-10" />
+                </button>
               )}
-              onClick={onClickReturn}
-              data-cy="return-to-work-list"
-            >
-              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
-              <div className="ml-1">
+              <div className="ml-4">
                 {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { InvestigationalUseDialog } from '@ohif/ui-next';
@@ -12,6 +12,27 @@ import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from
 import useResizablePanels from './ResizablePanelsHook';
 
 const resizableHandleClassName = 'mt-[1px] bg-background';
+const studyQuestionPanelStorageKey = 'ohif.studyQuestionPanelWidth';
+const studyQuestionPanelDefaultWidth = 380;
+const studyQuestionPanelMinimumWidth = 280;
+const studyQuestionPanelMaximumWidth = 560;
+const studyQuestionViewportMinimumWidth = 320;
+
+const getStoredStudyQuestionPanelWidth = () => {
+  try {
+    const storedWidth = Number(window.localStorage.getItem(studyQuestionPanelStorageKey));
+    if (Number.isFinite(storedWidth)) {
+      return Math.min(
+        studyQuestionPanelMaximumWidth,
+        Math.max(studyQuestionPanelMinimumWidth, storedWidth)
+      );
+    }
+  } catch {
+    // ignore
+  }
+
+  return studyQuestionPanelDefaultWidth;
+};
 
 function ViewerLayout({
   // From Extension Module Params
@@ -33,9 +54,19 @@ function ViewerLayout({
 }: withAppTypes): React.FunctionComponent {
   const [appConfig] = useAppConfig();
 
-  const { panelService, hangingProtocolService, customizationService } = servicesManager.services;
+  const { panelService, hangingProtocolService, customizationService, cornerstoneViewportService } =
+    servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
   const isStudyReview = new URLSearchParams(window.location.search).get('studyReview') === '1';
+  const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
+  const studyQuestionPanelApiRef = useRef(null);
+  const [studyQuestionPanelWidth, setStudyQuestionPanelWidth] = useState(
+    getStoredStudyQuestionPanelWidth
+  );
+  const [studyQuestionPanelSize, setStudyQuestionPanelSize] = useState(25);
+  const [studyQuestionPanelMinSize, setStudyQuestionPanelMinSize] = useState(0);
+  const [studyQuestionPanelMaxSize, setStudyQuestionPanelMaxSize] = useState(100);
+  const [studyQuestionViewportMinSize, setStudyQuestionViewportMinSize] = useState(0);
 
   const hasPanels = useCallback(
     (side): boolean => !!panelService.getPanels(side).length,
@@ -71,6 +102,118 @@ function ViewerLayout({
   const handleMouseEnter = () => {
     (document.activeElement as HTMLElement)?.blur();
   };
+
+  const requestViewportResize = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      cornerstoneViewportService?.resize?.();
+    });
+  }, [cornerstoneViewportService]);
+
+  const getStudyQuestionPanelSize = useCallback((pixelWidth: number, groupWidth?: number) => {
+    const panelGroupWidth =
+      groupWidth ?? studyQuestionPanelGroupRef.current?.getBoundingClientRect().width;
+
+    if (!panelGroupWidth) {
+      return 0;
+    }
+
+    return (pixelWidth / panelGroupWidth) * 100;
+  }, []);
+
+  const getStudyQuestionPixelWidth = useCallback(
+    (percentageSize: number) => {
+      const panelGroupWidth = studyQuestionPanelGroupRef.current?.getBoundingClientRect().width;
+
+      if (!panelGroupWidth) {
+        return studyQuestionPanelWidth;
+      }
+
+      return (percentageSize / 100) * panelGroupWidth;
+    },
+    [studyQuestionPanelWidth]
+  );
+
+  useLayoutEffect(() => {
+    const panelGroupElement = studyQuestionPanelGroupRef.current;
+
+    if (!panelGroupElement || isStudyReview) {
+      return;
+    }
+
+    const updateResizableSizes = () => {
+      const { width: panelGroupWidth } = panelGroupElement.getBoundingClientRect();
+
+      if (!panelGroupWidth) {
+        return;
+      }
+
+      const minimumPanelWidth = Math.min(studyQuestionPanelMinimumWidth, panelGroupWidth);
+      const minimumViewportWidth = Math.min(
+        studyQuestionViewportMinimumWidth,
+        Math.max(0, panelGroupWidth - minimumPanelWidth)
+      );
+      const maximumPanelWidth = Math.min(
+        studyQuestionPanelMaximumWidth,
+        Math.max(minimumPanelWidth, panelGroupWidth - minimumViewportWidth)
+      );
+      const nextPanelWidth = Math.min(
+        maximumPanelWidth,
+        Math.max(minimumPanelWidth, studyQuestionPanelWidth)
+      );
+      const nextPanelSize = getStudyQuestionPanelSize(nextPanelWidth, panelGroupWidth);
+
+      setStudyQuestionPanelMinSize(getStudyQuestionPanelSize(minimumPanelWidth, panelGroupWidth));
+      setStudyQuestionPanelMaxSize(getStudyQuestionPanelSize(maximumPanelWidth, panelGroupWidth));
+      setStudyQuestionViewportMinSize(
+        getStudyQuestionPanelSize(minimumViewportWidth, panelGroupWidth)
+      );
+      setStudyQuestionPanelSize(nextPanelSize);
+      studyQuestionPanelApiRef.current?.resize(nextPanelSize);
+    };
+
+    updateResizableSizes();
+
+    const observer = new ResizeObserver(updateResizableSizes);
+    observer.observe(panelGroupElement);
+
+    return () => observer.disconnect();
+  }, [getStudyQuestionPanelSize, isStudyReview, studyQuestionPanelWidth]);
+
+  const handleStudyQuestionPanelResize = useCallback(
+    size => {
+      if (isStudyReview) {
+        return;
+      }
+
+      const nextPanelWidth = Math.min(
+        studyQuestionPanelMaximumWidth,
+        Math.max(studyQuestionPanelMinimumWidth, getStudyQuestionPixelWidth(size))
+      );
+
+      setStudyQuestionPanelWidth(nextPanelWidth);
+
+      try {
+        window.localStorage.setItem(
+          studyQuestionPanelStorageKey,
+          String(Math.round(nextPanelWidth))
+        );
+      } catch {
+        // ignore
+      }
+
+      requestViewportResize();
+    },
+    [getStudyQuestionPixelWidth, isStudyReview, requestViewportResize]
+  );
+
+  const handleStudyQuestionPanelDragging = useCallback(
+    isStartDrag => {
+      if (!isStartDrag) {
+        requestViewportResize();
+      }
+    },
+    [requestViewportResize]
+  );
 
   const LoadingIndicatorProgress = customizationService.getCustomization(
     'ui.loadingIndicatorProgress'
@@ -190,26 +333,62 @@ function ViewerLayout({
             {/* TOOLBAR + GRID */}
             <ResizablePanel {...resizableViewportGridPanelProps}>
               <div className="flex h-full min-w-0 flex-1 flex-col">
-                <div
-                  className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row"
-                  onMouseEnter={handleMouseEnter}
-                >
-                  <div className="bg-background relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
-                    <ViewportGridComp
-                      servicesManager={servicesManager}
-                      viewportComponents={viewportComponents}
-                      commandsManager={commandsManager}
-                    />
-                    {isStudyReview ? (
+                {isStudyReview ? (
+                  <div
+                    className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row"
+                    onMouseEnter={handleMouseEnter}
+                  >
+                    <div className="bg-background relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+                      <ViewportGridComp
+                        servicesManager={servicesManager}
+                        viewportComponents={viewportComponents}
+                        commandsManager={commandsManager}
+                      />
                       <StudyReviewHeatmapOverlay servicesManager={servicesManager} />
-                    ) : null}
-                  </div>
-                  {isStudyReview ? (
+                    </div>
                     <StudyReviewPanel servicesManager={servicesManager} />
-                  ) : (
-                    <StudyQuestionPanel servicesManager={servicesManager} />
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div
+                    ref={studyQuestionPanelGroupRef}
+                    className="bg-background relative h-full min-h-0 flex-1 overflow-hidden"
+                    onMouseEnter={handleMouseEnter}
+                  >
+                    <ResizablePanelGroup
+                      direction="horizontal"
+                      onLayout={requestViewportResize}
+                    >
+                      <ResizablePanel
+                        order={0}
+                        id="viewerLayoutResizableStudyQuestionViewportPanel"
+                        minSize={studyQuestionViewportMinSize}
+                      >
+                        <div className="bg-background relative flex h-full min-h-0 min-w-0 items-center justify-center overflow-hidden">
+                          <ViewportGridComp
+                            servicesManager={servicesManager}
+                            viewportComponents={viewportComponents}
+                            commandsManager={commandsManager}
+                          />
+                        </div>
+                      </ResizablePanel>
+                      <ResizableHandle
+                        onDragging={handleStudyQuestionPanelDragging}
+                        className={resizableHandleClassName}
+                      />
+                      <ResizablePanel
+                        order={1}
+                        id="viewerLayoutResizableStudyQuestionPanel"
+                        defaultSize={studyQuestionPanelSize}
+                        minSize={studyQuestionPanelMinSize}
+                        maxSize={studyQuestionPanelMaxSize}
+                        onResize={handleStudyQuestionPanelResize}
+                        ref={studyQuestionPanelApiRef}
+                      >
+                        <StudyQuestionPanel servicesManager={servicesManager} />
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
+                  </div>
+                )}
               </div>
             </ResizablePanel>
             {hasRightPanels ? (

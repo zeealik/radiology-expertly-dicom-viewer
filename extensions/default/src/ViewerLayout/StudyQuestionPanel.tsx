@@ -315,7 +315,7 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
       : `Slice ${sliceState.imageIndex + 1}${sliceState.numberOfSlices ? ` / ${sliceState.numberOfSlices}` : ''}`;
 
   return (
-    <aside className="border-input bg-muted/30 flex h-full w-full shrink-0 flex-col border-t md:w-[380px] md:border-l md:border-t-0">
+    <aside className="border-input bg-muted/30 flex h-full w-full min-w-0 shrink-0 flex-col border-l">
       <div className="border-input flex min-h-[56px] items-center justify-between border-b px-5">
         <div className="min-w-0">
           <div className="text-foreground text-base font-semibold">Study Question</div>
