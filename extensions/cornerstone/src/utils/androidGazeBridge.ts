@@ -125,6 +125,12 @@ function getDicomMetadata(imageId?: string, primaryViewportData?: any) {
 function notifyAndroid(record: GazeRecord) {
   const payload = JSON.stringify(record);
 
+  window.dispatchEvent(
+    new CustomEvent('ohif-android-gaze-record', {
+      detail: record,
+    })
+  );
+
   try {
     window.AndroidBridge?.onGazeRecord?.(payload);
   } catch (error) {

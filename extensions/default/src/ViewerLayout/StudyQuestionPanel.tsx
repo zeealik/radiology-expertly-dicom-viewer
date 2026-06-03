@@ -19,13 +19,30 @@ type SubmittedAnswer = {
   questionId: string;
   questionText: string;
   answer: string;
-  viewportId: string;
+  viewportId: string | null;
   slice: number | null;
   numberOfSlices: number | null;
   timestamp: string;
 };
 
+type GazeRecord = {
+  timestamp: number;
+  viewportNormalizedX?: number;
+  viewportNormalizedY?: number;
+  sliceIndex?: number;
+  numberOfSlices?: number;
+  [key: string]: unknown;
+};
+
+type HeatmapPoint = {
+  x: number;
+  y: number;
+  value: number;
+};
+
 const REVIEW_STORAGE_KEY = 'ohif.studyQuestionReview';
+const MAX_REVIEW_GAZE_RECORDS = 5000;
+const MAX_HEATMAP_POINTS_PER_SLICE = 250;
 
 const DEFAULT_QUESTIONS: StudyQuestion[] = [
   {
@@ -64,7 +81,7 @@ function getQuestionSliceTriggers(question: StudyQuestion): number[] {
   ) as number[];
 }
 
-function dispatchQuestionAnswer(payload) {
+function dispatchStudyQuestionAnswer(payload) {
   const bridge = (window as any).OHIFBridge;
 
   try {
@@ -84,6 +101,26 @@ function dispatchQuestionAnswer(payload) {
   }
 }
 
+function dispatchStudyQuestionReview(payload) {
+  const bridge = (window as any).OHIFBridge;
+
+  try {
+    if (bridge && typeof bridge.onSubmitQuestionReview === 'function') {
+      bridge.onSubmitQuestionReview(JSON.stringify(payload));
+    } else if (bridge && typeof bridge.onSubmitStudyQuestionReview === 'function') {
+      bridge.onSubmitStudyQuestionReview(JSON.stringify(payload));
+    } else if (window.parent && window.parent !== window) {
+      window.parent.postMessage(payload, '*');
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('[StudyQuestionPanel] no review bridge - payload:', payload);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[StudyQuestionPanel] failed to dispatch review', err);
+  }
+}
+
 function getReviewPath(): string {
   const url = new URL(window.location.href);
   url.searchParams.set('studyReview', '1');
@@ -91,10 +128,46 @@ function getReviewPath(): string {
   return `${url.pathname}${url.search}`;
 }
 
-function saveReviewData(answers: SubmittedAnswer[], numberOfSlices: number | null) {
+function getHeatmapsBySlice(gazeRecords: GazeRecord[]): Record<string, HeatmapPoint[]> {
+  return gazeRecords.reduce<Record<string, HeatmapPoint[]>>((heatmapsBySlice, record) => {
+    const { viewportNormalizedX, viewportNormalizedY, sliceIndex } = record;
+
+    if (
+      typeof viewportNormalizedX !== 'number' ||
+      typeof viewportNormalizedY !== 'number' ||
+      typeof sliceIndex !== 'number'
+    ) {
+      return heatmapsBySlice;
+    }
+
+    const slice = String(sliceIndex + 1);
+    const points = heatmapsBySlice[slice] || [];
+
+    if (points.length >= MAX_HEATMAP_POINTS_PER_SLICE) {
+      return heatmapsBySlice;
+    }
+
+    points.push({
+      x: Math.min(Math.max(viewportNormalizedX * 100, 0), 100),
+      y: Math.min(Math.max(viewportNormalizedY * 100, 0), 100),
+      value: 0.7,
+    });
+    heatmapsBySlice[slice] = points;
+
+    return heatmapsBySlice;
+  }, {});
+}
+
+function saveReviewData(
+  answers: SubmittedAnswer[],
+  numberOfSlices: number | null,
+  gazeRecords: GazeRecord[]
+) {
   const payload = {
     type: 'OHIF_STUDY_QUESTION_REVIEW',
     answers,
+    gazeRecords,
+    heatmapsBySlice: getHeatmapsBySlice(gazeRecords),
     studyInstanceUIDs: getStudyInstanceUIDs(),
     numberOfSlices,
     url: window.location.href,
@@ -133,6 +206,7 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
     imageIndex: null,
     numberOfSlices: null,
   });
+  const gazeRecordsRef = React.useRef<GazeRecord[]>([]);
   const [sending, setSending] = useState(false);
 
   const showQuestion = useCallback(
@@ -156,7 +230,26 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
     setAnswer('');
     setSubmittedQuestionIds([]);
     setSubmittedAnswers([]);
+    gazeRecordsRef.current = [];
   }, [questions]);
+
+  useEffect(() => {
+    const handleGazeRecord = (event: Event) => {
+      const record = (event as CustomEvent<GazeRecord>).detail;
+
+      if (!record) {
+        return;
+      }
+
+      gazeRecordsRef.current = [...gazeRecordsRef.current, record].slice(-MAX_REVIEW_GAZE_RECORDS);
+    };
+
+    window.addEventListener('ohif-android-gaze-record', handleGazeRecord);
+
+    return () => {
+      window.removeEventListener('ohif-android-gaze-record', handleGazeRecord);
+    };
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => cornerstoneViewportService?.resize?.(), 50);
@@ -260,7 +353,7 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
       questionId: activeQuestion.id,
       questionText: activeQuestion.text,
       answer: answer.trim(),
-      viewportId: activeViewportId,
+      viewportId: activeViewportId || null,
       slice: sliceState.imageIndex === null ? null : sliceState.imageIndex + 1,
       numberOfSlices: sliceState.numberOfSlices,
       timestamp,
@@ -273,7 +366,7 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
       url: window.location.href,
     };
 
-    dispatchQuestionAnswer(payload);
+    dispatchStudyQuestionAnswer(payload);
     const nextSubmittedAnswers = [...submittedAnswers, submittedAnswer];
     const nextSubmittedQuestionIds = [...new Set([...submittedQuestionIds, activeQuestion.id])];
 
@@ -289,8 +382,12 @@ function StudyQuestionPanel({ servicesManager }: withAppTypes): React.ReactEleme
     if (nextQuestion && nextSubmittedQuestionIds.length < questions.length) {
       setActiveQuestion(nextQuestion);
     } else {
-      const reviewPayload = saveReviewData(nextSubmittedAnswers, sliceState.numberOfSlices);
-      dispatchQuestionAnswer(reviewPayload);
+      const reviewPayload = saveReviewData(
+        nextSubmittedAnswers,
+        sliceState.numberOfSlices,
+        gazeRecordsRef.current
+      );
+      dispatchStudyQuestionReview(reviewPayload);
       window.setTimeout(() => {
         window.location.assign(getReviewPath());
       }, 300);
