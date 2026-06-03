@@ -21,10 +21,6 @@ window.config = {
         wadoUriRoot: 'http://localhost:8042/dicom-web',
         qidoRoot: 'http://localhost:8042/dicom-web',
         wadoRoot: 'http://localhost:8042/dicom-web',
-        requestOptions: {
-          requestCredentials: 'include',
-          auth: 'orthanc:orthanc',
-        },
         qidoSupportsIncludeField: true,
         supportsReject: true,
         dicomUploadEnabled: true,

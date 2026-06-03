@@ -6,7 +6,8 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
-import SubmitFeedbackButton from './SubmitFeedbackButton';
+import StudyQuestionPanel from './StudyQuestionPanel';
+import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -34,6 +35,7 @@ function ViewerLayout({
 
   const { panelService, hangingProtocolService, customizationService } = servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
+  const isStudyReview = new URLSearchParams(window.location.search).get('studyReview') === '1';
 
   const hasPanels = useCallback(
     (side): boolean => !!panelService.getPanels(side).length,
@@ -159,11 +161,13 @@ function ViewerLayout({
         appConfig={appConfig}
       />
       <div
-        className="relative flex w-full flex-row flex-nowrap items-stretch overflow-hidden bg-background"
-        style={{ height: 'calc(100vh - 52px' }}
+        className="bg-background relative flex w-full flex-row flex-nowrap items-stretch overflow-hidden"
+        style={{ height: 'calc(100vh - 52px)' }}
       >
         <React.Fragment>
-          {showLoadingIndicator && <LoadingIndicatorProgress className="h-full w-full bg-background" />}
+          {showLoadingIndicator && (
+            <LoadingIndicatorProgress className="bg-background h-full w-full" />
+          )}
           <ResizablePanelGroup {...resizablePanelGroupProps}>
             {/* LEFT SIDEPANELS */}
             {hasLeftPanels ? (
@@ -185,16 +189,26 @@ function ViewerLayout({
             ) : null}
             {/* TOOLBAR + GRID */}
             <ResizablePanel {...resizableViewportGridPanelProps}>
-              <div className="flex h-full flex-1 flex-col">
+              <div className="flex h-full min-w-0 flex-1 flex-col">
                 <div
-                  className="relative flex h-full flex-1 items-center justify-center overflow-hidden bg-background"
+                  className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row"
                   onMouseEnter={handleMouseEnter}
                 >
-                  <ViewportGridComp
-                    servicesManager={servicesManager}
-                    viewportComponents={viewportComponents}
-                    commandsManager={commandsManager}
-                  />
+                  <div className="bg-background relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+                    <ViewportGridComp
+                      servicesManager={servicesManager}
+                      viewportComponents={viewportComponents}
+                      commandsManager={commandsManager}
+                    />
+                    {isStudyReview ? (
+                      <StudyReviewHeatmapOverlay servicesManager={servicesManager} />
+                    ) : null}
+                  </div>
+                  {isStudyReview ? (
+                    <StudyReviewPanel servicesManager={servicesManager} />
+                  ) : (
+                    <StudyQuestionPanel servicesManager={servicesManager} />
+                  )}
                 </div>
               </div>
             </ResizablePanel>
@@ -217,7 +231,6 @@ function ViewerLayout({
             ) : null}
           </ResizablePanelGroup>
         </React.Fragment>
-        <SubmitFeedbackButton />
       </div>
       <Onboarding tours={customizationService.getCustomization('ohif.tours')} />
       <InvestigationalUseDialog dialogConfiguration={appConfig?.investigationalUseDialog} />
