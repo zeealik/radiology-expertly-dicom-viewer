@@ -27,6 +27,7 @@ const NODE_ENV = process.env.NODE_ENV;
 const QUICK_BUILD = process.env.QUICK_BUILD;
 const BUILD_NUM = process.env.CIRCLE_BUILD_NUM || '0';
 const IS_COVERAGE = process.env.COVERAGE === 'true';
+const USE_REACT_REFRESH = process.env.REACT_REFRESH === 'true';
 
 // read from ../version.txt
 const VERSION_NUMBER = fs.readFileSync(path.join(__dirname, '../version.txt'), 'utf8') || '';
@@ -121,7 +122,7 @@ module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
                       exclude: /node_modules/,
                       loader: 'babel-loader',
                       options: {
-                        plugins: isProdBuild ? [] : ['react-refresh/babel'],
+                        plugins: USE_REACT_REFRESH ? ['react-refresh/babel'] : [],
                       },
                     },
                   ]),
@@ -228,7 +229,7 @@ module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
       new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
       }),
-      ...(isProdBuild ? [] : [new ReactRefreshWebpackPlugin({ overlay: false })]),
+      ...(USE_REACT_REFRESH ? [new ReactRefreshWebpackPlugin({ overlay: false })] : []),
       // Uncomment to generate bundle analyzer
       // new BundleAnalyzerPlugin(),
     ],

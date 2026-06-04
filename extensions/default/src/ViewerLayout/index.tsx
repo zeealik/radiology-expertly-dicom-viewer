@@ -6,6 +6,7 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
+import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
@@ -58,6 +59,7 @@ function ViewerLayout({
     servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
   const isStudyReview = new URLSearchParams(window.location.search).get('studyReview') === '1';
+  const isStudyFeedback = new URLSearchParams(window.location.search).get('studyFeedback') === '1';
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
   const studyQuestionPanelApiRef = useRef(null);
   const [studyQuestionPanelWidth, setStudyQuestionPanelWidth] = useState(
@@ -301,19 +303,19 @@ function ViewerLayout({
         hotkeysManager={hotkeysManager}
         extensionManager={extensionManager}
         servicesManager={servicesManager}
-        appConfig={appConfig}
+        appConfig={isStudyFeedback ? { ...appConfig, showStudyList: false } : appConfig}
       />
       <div
         className="bg-background relative flex w-full flex-row flex-nowrap items-stretch overflow-hidden"
         style={{ height: 'calc(100vh - 52px)' }}
       >
         <React.Fragment>
-          {showLoadingIndicator && (
+          {!isStudyFeedback && showLoadingIndicator && (
             <LoadingIndicatorProgress className="bg-background h-full w-full" />
           )}
           <ResizablePanelGroup {...resizablePanelGroupProps}>
             {/* LEFT SIDEPANELS */}
-            {hasLeftPanels ? (
+            {!isStudyFeedback && hasLeftPanels ? (
               <>
                 <ResizablePanel {...resizableLeftPanelProps}>
                   <SidePanelWithServices
@@ -333,7 +335,9 @@ function ViewerLayout({
             {/* TOOLBAR + GRID */}
             <ResizablePanel {...resizableViewportGridPanelProps}>
               <div className="flex h-full min-w-0 flex-1 flex-col">
-                {isStudyReview ? (
+                {isStudyFeedback ? (
+                  <StudyFeedbackPage />
+                ) : isStudyReview ? (
                   <div
                     className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row"
                     onMouseEnter={handleMouseEnter}
@@ -391,7 +395,7 @@ function ViewerLayout({
                 )}
               </div>
             </ResizablePanel>
-            {hasRightPanels ? (
+            {!isStudyFeedback && hasRightPanels ? (
               <>
                 <ResizableHandle
                   onDragging={onHandleDragging}

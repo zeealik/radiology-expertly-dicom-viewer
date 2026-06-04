@@ -132,6 +132,13 @@ function clearReviewMode() {
   window.location.assign(`${url.pathname}${url.search}`);
 }
 
+function openFeedbackPage() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('studyReview');
+  url.searchParams.set('studyFeedback', '1');
+  window.location.assign(`${url.pathname}${url.search}`);
+}
+
 function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement {
   const [{ activeViewportId }] = useViewportGrid();
   const { cornerstoneViewportService } = servicesManager.services;
@@ -178,6 +185,16 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
             No submitted answers found for this review session.
           </div>
         )}
+      </div>
+
+      <div className="border-input border-t p-5">
+        <button
+          type="button"
+          onClick={openFeedbackPage}
+          className="bg-primary-main hover:bg-primary-light focus:ring-primary-main w-full rounded px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
+        >
+          Continue to Feedback
+        </button>
       </div>
     </aside>
   );

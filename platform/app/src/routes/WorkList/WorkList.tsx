@@ -41,6 +41,7 @@ import { Types } from '@ohif/ui';
 import { preserveQueryParameters, preserveQueryStrings } from '../../utils/preserveQueryParameters';
 
 const PatientInfoVisibility = Types.PatientInfoVisibility;
+const BASIC_VIEWER_MODE_ID = '@ohif/mode-longitudinal';
 
 const { sortBySeriesDate } = utils;
 
@@ -96,6 +97,8 @@ function WorkList({
   const defaultSortValues =
     shouldUseDefaultSort && canSort ? { sortBy: 'studyDate', sortDirection: 'ascending' } : {};
   const { customizationService } = servicesManager.services;
+  // const studyListModes = appConfig.loadedModes;
+  const studyListModes = appConfig.loadedModes.filter(mode => mode.id === BASIC_VIEWER_MODE_ID);
 
   const sortedStudies = useMemo(() => {
     if (!canSort) {
@@ -377,7 +380,7 @@ function WorkList({
         >
           <div className="flex flex-row gap-2">
             {(appConfig.groupEnabledModesFirst
-              ? appConfig.loadedModes.sort((a, b) => {
+              ? studyListModes.sort((a, b) => {
                   const isValidA = a.isValidMode({
                     modalities: modalities.replaceAll('/', '\\'),
                     study,
@@ -389,7 +392,7 @@ function WorkList({
 
                   return isValidB - isValidA;
                 })
-              : appConfig.loadedModes
+              : studyListModes
             ).map((mode, i) => {
               if (mode.hide) {
                 // Hide this mode from display
