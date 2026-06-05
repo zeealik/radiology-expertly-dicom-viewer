@@ -24,7 +24,7 @@ const ToolButtonList = React.forwardRef<HTMLDivElement, ToolButtonListProps>(
     return (
       <div
         ref={ref}
-        className={cn('flex items-center', className)}
+        className={cn('flex shrink-0 items-center', className)}
         {...props}
       >
         {children}
@@ -98,7 +98,8 @@ const ToolButtonListDropDown = React.forwardRef<HTMLDivElement, ToolButtonListDr
           size="icon"
           className={cn(
             'text-foreground/80 hover:bg-background hover:text-highlight border-primary',
-            'inline-flex h-10 w-5 items-center justify-center',
+            'min-w-11 inline-flex h-11 w-11 items-center justify-center',
+            'shrink-0',
             '!rounded-tr-lg !rounded-br-lg !rounded-tl-none !rounded-bl-none',
             'bg-transparent',
             className
@@ -106,7 +107,7 @@ const ToolButtonListDropDown = React.forwardRef<HTMLDivElement, ToolButtonListDr
         >
           <Icons.ByName
             name="chevron-down"
-            className="text-primary h-5 w-5"
+            className="text-primary h-8 w-8 stroke-[3.5] [filter:drop-shadow(0_0_0_currentColor)]"
           />
         </Button>
       </DropdownMenuTrigger>
@@ -115,6 +116,7 @@ const ToolButtonListDropDown = React.forwardRef<HTMLDivElement, ToolButtonListDr
         side="bottom"
         align="start"
         alignOffset={-40}
+        className="max-h-[calc(100vh-6rem)] min-w-[16rem] overflow-y-auto p-2"
       >
         {children}
       </DropdownMenuContent>
@@ -145,14 +147,14 @@ const ToolButtonListItem = React.forwardRef<
   const menuItem = (
     <DropdownMenuItem
       ref={ref}
-      className={cn('flex items-center space-x-2', className)}
+      className={cn('min-h-11 flex items-center gap-3 px-3 py-2 text-lg', className)}
       disabled={disabled}
       {...props}
     >
       {icon && (
         <Icons.ByName
           name={icon || 'MissingIcon'}
-          className="h-6 w-6"
+          className="h-7 w-7 shrink-0"
         />
       )}
       {children}
