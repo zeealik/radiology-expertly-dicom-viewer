@@ -2,7 +2,6 @@ import {
   PanTool,
   WindowLevelTool,
   SegmentBidirectionalTool,
-  StackScrollTool,
   VolumeRotateTool,
   ZoomTool,
   MIPJumpToClickTool,
@@ -51,6 +50,7 @@ import * as polySeg from '@cornerstonejs/polymorphic-segmentation';
 
 import CalibrationLineTool from './tools/CalibrationLineTool';
 import ImageOverlayViewerTool from './tools/ImageOverlayViewerTool';
+import StackScrollTool from './tools/StackScrollTool';
 
 export default function initCornerstoneTools(configuration = {}) {
   CrosshairsTool.isAnnotation = false;
