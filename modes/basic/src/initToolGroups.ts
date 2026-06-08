@@ -20,10 +20,6 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
   const tools = {
     active: [
       {
-        toolName: toolNames.WindowLevel,
-        bindings: [{ mouseButton: Enums.MouseBindings.Primary }],
-      },
-      {
         toolName: toolNames.Pan,
         bindings: [{ mouseButton: Enums.MouseBindings.Auxiliary }],
       },
@@ -33,10 +29,15 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       },
       {
         toolName: toolNames.StackScroll,
-        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+        bindings: [
+          { mouseButton: Enums.MouseBindings.Primary },
+          { mouseButton: Enums.MouseBindings.Wheel },
+          { numTouchPoints: 3 },
+        ],
       },
     ],
     passive: [
+      { toolName: toolNames.WindowLevel },
       { toolName: toolNames.Length },
       {
         toolName: toolNames.ArrowAnnotate,
@@ -65,7 +66,6 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       { toolName: toolNames.EllipticalROI },
       { toolName: toolNames.CircleROI },
       { toolName: toolNames.RectangleROI },
-      { toolName: toolNames.StackScroll },
       { toolName: toolNames.Angle },
       { toolName: toolNames.CobbAngle },
       { toolName: toolNames.Magnify },
@@ -116,14 +116,6 @@ function initSRToolGroup(extensionManager, toolGroupService) {
   const tools = {
     active: [
       {
-        toolName: toolNames.WindowLevel,
-        bindings: [
-          {
-            mouseButton: Enums.MouseBindings.Primary,
-          },
-        ],
-      },
-      {
         toolName: toolNames.Pan,
         bindings: [
           {
@@ -142,10 +134,15 @@ function initSRToolGroup(extensionManager, toolGroupService) {
       },
       {
         toolName: toolNames.StackScroll,
-        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+        bindings: [
+          { mouseButton: Enums.MouseBindings.Primary },
+          { mouseButton: Enums.MouseBindings.Wheel },
+          { numTouchPoints: 3 },
+        ],
       },
     ],
     passive: [
+      { toolName: toolNames.WindowLevel },
       { toolName: SRToolNames.SRLength },
       { toolName: SRToolNames.SRArrowAnnotate },
       { toolName: SRToolNames.SRBidirectional },
@@ -180,10 +177,6 @@ function initMPRToolGroup(extensionManager, toolGroupService, commandsManager) {
   const tools = {
     active: [
       {
-        toolName: toolNames.WindowLevel,
-        bindings: [{ mouseButton: Enums.MouseBindings.Primary }],
-      },
-      {
         toolName: toolNames.Pan,
         bindings: [{ mouseButton: Enums.MouseBindings.Auxiliary }],
       },
@@ -193,10 +186,15 @@ function initMPRToolGroup(extensionManager, toolGroupService, commandsManager) {
       },
       {
         toolName: toolNames.StackScroll,
-        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+        bindings: [
+          { mouseButton: Enums.MouseBindings.Primary },
+          { mouseButton: Enums.MouseBindings.Wheel },
+          { numTouchPoints: 3 },
+        ],
       },
     ],
     passive: [
+      { toolName: toolNames.WindowLevel },
       { toolName: toolNames.Length },
       {
         toolName: toolNames.ArrowAnnotate,
@@ -222,7 +220,6 @@ function initMPRToolGroup(extensionManager, toolGroupService, commandsManager) {
       { toolName: toolNames.EllipticalROI },
       { toolName: toolNames.CircleROI },
       { toolName: toolNames.RectangleROI },
-      { toolName: toolNames.StackScroll },
       { toolName: toolNames.Angle },
       { toolName: toolNames.CobbAngle },
       { toolName: toolNames.PlanarFreehandROI },

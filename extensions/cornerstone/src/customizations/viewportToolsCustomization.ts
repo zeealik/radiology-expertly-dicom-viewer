@@ -5,10 +5,6 @@ export default {
   'cornerstone.overlayViewportTools': {
     active: [
       {
-        toolName: toolNames.WindowLevel,
-        bindings: [{ mouseButton: Enums.MouseBindings.Primary }],
-      },
-      {
         toolName: toolNames.Pan,
         bindings: [{ mouseButton: Enums.MouseBindings.Auxiliary }],
       },
@@ -18,9 +14,14 @@ export default {
       },
       {
         toolName: toolNames.StackScroll,
-        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
+        bindings: [
+          { mouseButton: Enums.MouseBindings.Primary },
+          { mouseButton: Enums.MouseBindings.Wheel },
+          { numTouchPoints: 3 },
+        ],
       },
     ],
+    passive: [{ toolName: toolNames.WindowLevel }],
     enabled: [
       {
         toolName: toolNames.PlanarFreehandContourSegmentation,

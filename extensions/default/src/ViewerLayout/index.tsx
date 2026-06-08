@@ -13,8 +13,8 @@ import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from
 import useResizablePanels from './ResizablePanelsHook';
 
 const resizableHandleClassName = 'mt-[1px] bg-background';
-const studyQuestionPanelStorageKey = 'ohif.studyQuestionPanelWidth';
-const studyQuestionPanelDefaultWidth = 380;
+const studyQuestionPanelStorageKey = 'ohif.studyQuestionPanelWidth.v2';
+const studyQuestionPanelDefaultWidth = 320;
 const studyQuestionPanelMinimumWidth = 280;
 const studyQuestionPanelMaximumWidth = 560;
 const studyQuestionViewportMinimumWidth = 320;

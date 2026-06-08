@@ -294,10 +294,17 @@ const toolbarButtons: Button[] = [
     id: 'StackScroll',
     uiType: 'ohif.toolButton',
     props: {
+      type: 'tool',
       icon: 'tool-stack-scroll',
       label: i18n.t('Buttons:Stack Scroll'),
       tooltip: i18n.t('Buttons:Stack Scroll'),
-      commands: setToolActiveToolbar,
+      commands: {
+        ...setToolActiveToolbar,
+        commandOptions: {
+          ...setToolActiveToolbar.commandOptions,
+          toolName: 'StackScroll',
+        },
+      },
       evaluate: 'evaluate.cornerstoneTool',
     },
   },
