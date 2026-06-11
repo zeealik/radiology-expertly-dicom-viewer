@@ -27,6 +27,10 @@ const PROXY_PATH_REWRITE_TO = process.env.PROXY_PATH_REWRITE_TO;
 const IS_COVERAGE = process.env.COVERAGE === 'true';
 
 const OHIF_PORT = Number(process.env.OHIF_PORT || 8080);
+const OHIF_ALLOWED_HOSTS = (process.env.OHIF_ALLOWED_HOSTS || '.ngrok-free.app')
+  .split(',')
+  .map(host => host.trim())
+  .filter(Boolean);
 const ENTRY_TARGET = process.env.ENTRY_TARGET || `${SRC_DIR}/index.js`;
 const Dotenv = require('dotenv-webpack');
 const writePluginImportFile = require('./writePluginImportsFile.js');
@@ -150,6 +154,7 @@ module.exports = (env, argv) => {
       // https: true,
       open,
       port: OHIF_PORT,
+      allowedHosts: OHIF_ALLOWED_HOSTS,
       client: {
         overlay: { errors: true, warnings: false },
       },

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
 import { useViewportGrid } from '@ohif/ui-next';
+import { getHeatmapsBySlice } from './gazeHeatmapUtils';
+import type { GazeRecord } from './gazeHeatmapUtils';
 
 type StudyQuestion = {
   id: string;
@@ -25,24 +27,8 @@ type SubmittedAnswer = {
   timestamp: string;
 };
 
-type GazeRecord = {
-  timestamp: number;
-  viewportNormalizedX?: number;
-  viewportNormalizedY?: number;
-  sliceIndex?: number;
-  numberOfSlices?: number;
-  [key: string]: unknown;
-};
-
-type HeatmapPoint = {
-  x: number;
-  y: number;
-  value: number;
-};
-
 const REVIEW_STORAGE_KEY = 'ohif.studyQuestionReview';
 const MAX_REVIEW_GAZE_RECORDS = 5000;
-const MAX_HEATMAP_POINTS_PER_SLICE = 250;
 
 const DEFAULT_QUESTIONS: StudyQuestion[] = [
   {
@@ -126,36 +112,6 @@ function getReviewPath(): string {
   url.searchParams.set('studyReview', '1');
 
   return `${url.pathname}${url.search}`;
-}
-
-function getHeatmapsBySlice(gazeRecords: GazeRecord[]): Record<string, HeatmapPoint[]> {
-  return gazeRecords.reduce<Record<string, HeatmapPoint[]>>((heatmapsBySlice, record) => {
-    const { viewportNormalizedX, viewportNormalizedY, sliceIndex } = record;
-
-    if (
-      typeof viewportNormalizedX !== 'number' ||
-      typeof viewportNormalizedY !== 'number' ||
-      typeof sliceIndex !== 'number'
-    ) {
-      return heatmapsBySlice;
-    }
-
-    const slice = String(sliceIndex + 1);
-    const points = heatmapsBySlice[slice] || [];
-
-    if (points.length >= MAX_HEATMAP_POINTS_PER_SLICE) {
-      return heatmapsBySlice;
-    }
-
-    points.push({
-      x: Math.min(Math.max(viewportNormalizedX * 100, 0), 100),
-      y: Math.min(Math.max(viewportNormalizedY * 100, 0), 100),
-      value: 0.7,
-    });
-    heatmapsBySlice[slice] = points;
-
-    return heatmapsBySlice;
-  }, {});
 }
 
 function saveReviewData(

@@ -60,6 +60,10 @@ import { useMeasurementTracking } from './hooks/useMeasurementTracking';
 import { setUpSegmentationEventHandlers } from './utils/setUpSegmentationEventHandlers';
 import { setUpAnnotationEventHandlers } from './utils/setUpAnnotationEventHandlers';
 import { installAndroidGazeBridge } from './utils/androidGazeBridge';
+import {
+  installEyeGesturesBrowserClient,
+  uninstallEyeGesturesBrowserClient,
+} from './utils/eyeGesturesBrowserClient';
 import update from 'immutability-helper';
 export * from './components';
 
@@ -104,6 +108,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
 
   onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
     installAndroidGazeBridge();
+    installEyeGesturesBrowserClient();
 
     const { cornerstoneViewportService, toolbarService, segmentationService } =
       servicesManager.services;
@@ -158,6 +163,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
   },
   getPanelModule,
   onModeExit: ({ servicesManager }: withAppTypes): void => {
+    uninstallEyeGesturesBrowserClient();
     unsubscriptions.forEach(unsubscribe => unsubscribe());
     // Clear the unsubscriptions
     unsubscriptions.length = 0;

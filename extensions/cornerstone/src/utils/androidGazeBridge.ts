@@ -14,6 +14,10 @@ type RegisteredViewport = {
 
 type GazeRecord = {
   timestamp: number;
+  source?: string;
+  confidence?: number;
+  fixation?: boolean;
+  saccades?: boolean;
   viewportId: string;
   activeViewportId?: string;
   screenX: number;
@@ -44,7 +48,12 @@ declare global {
       onGazeRecord?: (record: string) => void;
     };
     OHIFAndroidGazeBridge?: {
-      capture: (screenX: number, screenY: number, timestamp?: number) => GazeRecord | null;
+      capture: (
+        screenX: number,
+        screenY: number,
+        timestamp?: number,
+        metadata?: Partial<GazeRecord>
+      ) => GazeRecord | null;
       captureJson: (screenX: number, screenY: number, timestamp?: number) => string | null;
       getRegisteredViewports: () => string[];
       isReady: () => boolean;
@@ -157,7 +166,12 @@ function notifyBridgeReady() {
   }
 }
 
-function capture(screenX: number, screenY: number, timestamp = Date.now()): GazeRecord | null {
+function capture(
+  screenX: number,
+  screenY: number,
+  timestamp = Date.now(),
+  metadata: Partial<GazeRecord> = {}
+): GazeRecord | null {
   const servicesManager = servicesManagerRef;
 
   if (!servicesManager || !Number.isFinite(screenX) || !Number.isFinite(screenY)) {
@@ -188,6 +202,10 @@ function capture(screenX: number, screenY: number, timestamp = Date.now()): Gaze
 
   const record: GazeRecord = {
     timestamp,
+    source: metadata.source,
+    confidence: metadata.confidence,
+    fixation: metadata.fixation,
+    saccades: metadata.saccades,
     viewportId,
     activeViewportId: viewportGridService?.getActiveViewportId?.(),
     screenX,

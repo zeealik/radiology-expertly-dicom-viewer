@@ -9,6 +9,7 @@ import { setEnabledElement } from '../state';
 
 import './OHIFCornerstoneViewport.css';
 import CornerstoneOverlays from './Overlays/CornerstoneOverlays';
+import LiveGazeHeatmapOverlay from './LiveGazeHeatmapOverlay';
 import CinePlayer from '../components/CinePlayer';
 import type { Types } from '@ohif/core';
 
@@ -328,6 +329,7 @@ const OHIFCornerstoneViewport = React.memo(
               }
             }}
           ></div>
+          <LiveGazeHeatmapOverlay viewportId={viewportId} />
           <CornerstoneOverlays
             viewportId={viewportId}
             toolBarService={toolbarService}

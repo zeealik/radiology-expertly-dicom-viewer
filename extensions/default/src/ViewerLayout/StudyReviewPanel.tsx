@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
 import { useViewportGrid } from '@ohif/ui-next';
+import type { HeatmapPoint } from './gazeHeatmapUtils';
 
 type SubmittedAnswer = {
   questionId: string;
@@ -10,12 +11,6 @@ type SubmittedAnswer = {
   slice: number | null;
   numberOfSlices: number | null;
   timestamp: string;
-};
-
-type HeatmapPoint = {
-  x: number;
-  y: number;
-  value: number;
 };
 
 type StudyReviewData = {
@@ -39,23 +34,6 @@ function getStoredReviewData(): StudyReviewData {
   } catch {
     return {};
   }
-}
-
-function getMockHeatmap(slice: number): HeatmapPoint[] {
-  return [0, 1, 2].map(index => ({
-    x: 22 + ((slice * 19 + index * 24) % 58),
-    y: 18 + ((slice * 31 + index * 17) % 62),
-    value: 0.45 + ((slice + index) % 4) * 0.14,
-  }));
-}
-
-function getHeatmapGradient(points: HeatmapPoint[]): string {
-  return points
-    .map(point => {
-      const alpha = Math.min(Math.max(point.value, 0.2), 1);
-      return `radial-gradient(circle at ${point.x}% ${point.y}%, rgba(14, 165, 233, ${alpha}) 0, rgba(14, 165, 233, ${alpha * 0.55}) 7%, rgba(250, 204, 21, ${alpha * 0.42}) 14%, rgba(239, 68, 68, 0) 30%)`;
-    })
-    .join(', ');
 }
 
 function useActiveSlice(
@@ -203,23 +181,81 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
 function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.ReactElement {
   const [{ activeViewportId }] = useViewportGrid();
   const { cornerstoneViewportService } = servicesManager.services;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const reviewData = useMemo(getStoredReviewData, []);
   const { slice } = useActiveSlice(cornerstoneViewportService, activeViewportId);
   const heatmapsBySlice = reviewData.heatmapsBySlice || {};
-  const points = slice ? heatmapsBySlice[String(slice)] || getMockHeatmap(slice) : [];
+  const points = slice ? heatmapsBySlice[String(slice)] || [] : [];
 
-  if (!slice || !points.length) {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const render = () => {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(Math.floor(rect.width * window.devicePixelRatio), 1);
+      const height = Math.max(Math.floor(rect.height * window.devicePixelRatio), 1);
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        return;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      context.clearRect(0, 0, width, height);
+
+      if (!points.length) {
+        return;
+      }
+
+      context.scale(window.devicePixelRatio, window.devicePixelRatio);
+      context.globalCompositeOperation = 'screen';
+
+      points.forEach(point => {
+        const x = (point.x / 100) * rect.width;
+        const y = (point.y / 100) * rect.height;
+        const value = Math.min(Math.max(point.value, 0.2), 1);
+        const radius = 42 + value * 34;
+        const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+
+        gradient.addColorStop(0, `rgba(239, 68, 68, ${0.72 * value})`);
+        gradient.addColorStop(0.34, `rgba(250, 204, 21, ${0.48 * value})`);
+        gradient.addColorStop(0.68, `rgba(14, 165, 233, ${0.2 * value})`);
+        gradient.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
+        context.fillStyle = gradient;
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fill();
+      });
+    };
+
+    render();
+
+    const observer = new ResizeObserver(render);
+    observer.observe(canvas);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [points]);
+
+  if (!slice) {
     return null;
   }
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
-      <div
-        className="absolute inset-0 opacity-75 mix-blend-screen"
-        style={{ backgroundImage: getHeatmapGradient(points) }}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 h-full w-full opacity-80 mix-blend-screen"
       />
       <div className="text-muted-foreground absolute bottom-3 left-3 rounded bg-black/70 px-2 py-1 text-xs">
-        {heatmapsBySlice[String(slice)] ? 'VR gaze heatmap' : 'Mock gaze heatmap'}
+        {points.length ? 'EyeGestures gaze heatmap' : 'No gaze data captured'}
       </div>
     </div>
   );
