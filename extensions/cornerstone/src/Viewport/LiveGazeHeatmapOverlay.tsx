@@ -131,10 +131,10 @@ function LiveGazeHeatmapOverlay({ viewportId }: { viewportId: string }): React.R
 
     const resizeObserver = new ResizeObserver(scheduleRender);
     resizeObserver.observe(canvas);
-    window.addEventListener('ohif-android-gaze-record', handleGazeRecord);
+    window.addEventListener('ohif-gaze-record', handleGazeRecord);
 
     return () => {
-      window.removeEventListener('ohif-android-gaze-record', handleGazeRecord);
+      window.removeEventListener('ohif-gaze-record', handleGazeRecord);
       resizeObserver.disconnect();
 
       if (animationFrameRef.current !== null) {

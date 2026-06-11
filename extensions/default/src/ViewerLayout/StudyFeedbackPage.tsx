@@ -25,7 +25,7 @@ function dispatchStudyFeedback(payload) {
     window.parent.postMessage(payload, '*');
   } else {
     // eslint-disable-next-line no-console
-    console.log('[StudyFeedbackPage] no native bridge - payload:', payload);
+    console.log('[StudyFeedbackPage] no feedback bridge - payload:', payload);
   }
 }
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useLayoutEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import { useLocation } from 'react-router-dom';
 
-import { InvestigationalUseDialog } from '@ohif/ui-next';
+import { Icons, InvestigationalUseDialog } from '@ohif/ui-next';
 import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
@@ -18,6 +19,11 @@ const studyQuestionPanelDefaultWidth = 320;
 const studyQuestionPanelMinimumWidth = 280;
 const studyQuestionPanelMaximumWidth = 560;
 const studyQuestionViewportMinimumWidth = 320;
+const studyQuestionPanelCollapsedWidth = 40;
+const mobileViewportMediaQuery = '(max-width: 767px)';
+
+const isMobileViewport = () =>
+  typeof window !== 'undefined' && window.matchMedia(mobileViewportMediaQuery).matches;
 
 const getStoredStudyQuestionPanelWidth = () => {
   try {
@@ -54,18 +60,22 @@ function ViewerLayout({
   rightPanelMinimumExpandedWidth,
 }: withAppTypes): React.FunctionComponent {
   const [appConfig] = useAppConfig();
+  const location = useLocation();
 
   const { panelService, hangingProtocolService, customizationService, cornerstoneViewportService } =
     servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
-  const isStudyReview = new URLSearchParams(window.location.search).get('studyReview') === '1';
-  const isStudyFeedback = new URLSearchParams(window.location.search).get('studyFeedback') === '1';
+  const searchParams = new URLSearchParams(location.search);
+  const isStudyReview = searchParams.get('studyReview') === '1';
+  const isStudyFeedback = searchParams.get('studyFeedback') === '1';
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
   const studyQuestionPanelApiRef = useRef(null);
   const [studyQuestionPanelWidth, setStudyQuestionPanelWidth] = useState(
     getStoredStudyQuestionPanelWidth
   );
+  const [studyQuestionPanelCollapsed, setStudyQuestionPanelCollapsed] = useState(isMobileViewport);
   const [studyQuestionPanelSize, setStudyQuestionPanelSize] = useState(25);
+  const [studyQuestionPanelCollapsedSize, setStudyQuestionPanelCollapsedSize] = useState(0);
   const [studyQuestionPanelMinSize, setStudyQuestionPanelMinSize] = useState(0);
   const [studyQuestionPanelMaxSize, setStudyQuestionPanelMaxSize] = useState(100);
   const [studyQuestionViewportMinSize, setStudyQuestionViewportMinSize] = useState(0);
@@ -77,8 +87,12 @@ function ViewerLayout({
 
   const [hasRightPanels, setHasRightPanels] = useState(hasPanels('right'));
   const [hasLeftPanels, setHasLeftPanels] = useState(hasPanels('left'));
-  const [leftPanelClosedState, setLeftPanelClosed] = useState(leftPanelClosed);
-  const [rightPanelClosedState, setRightPanelClosed] = useState(rightPanelClosed);
+  const [leftPanelClosedState, setLeftPanelClosed] = useState(
+    () => leftPanelClosed || isMobileViewport()
+  );
+  const [rightPanelClosedState, setRightPanelClosed] = useState(
+    () => rightPanelClosed || isMobileViewport()
+  );
 
   const [
     leftPanelProps,
@@ -89,9 +103,9 @@ function ViewerLayout({
     resizableRightPanelProps,
     onHandleDragging,
   ] = useResizablePanels(
-    leftPanelClosed,
+    leftPanelClosedState,
     setLeftPanelClosed,
-    rightPanelClosed,
+    rightPanelClosedState,
     setRightPanelClosed,
     hasLeftPanels,
     hasRightPanels,
@@ -110,6 +124,23 @@ function ViewerLayout({
       cornerstoneViewportService?.resize?.();
     });
   }, [cornerstoneViewportService]);
+
+  const setStudyQuestionCollapsed = useCallback(
+    (collapsed: boolean) => {
+      setStudyQuestionPanelCollapsed(collapsed);
+      window.requestAnimationFrame(() => {
+        if (collapsed) {
+          studyQuestionPanelApiRef.current?.collapse?.();
+        } else {
+          studyQuestionPanelApiRef.current?.expand?.(studyQuestionPanelSize);
+          studyQuestionPanelApiRef.current?.resize?.(studyQuestionPanelSize);
+        }
+
+        requestViewportResize();
+      });
+    },
+    [requestViewportResize, studyQuestionPanelSize]
+  );
 
   const getStudyQuestionPanelSize = useCallback((pixelWidth: number, groupWidth?: number) => {
     const panelGroupWidth =
@@ -150,6 +181,7 @@ function ViewerLayout({
       }
 
       const minimumPanelWidth = Math.min(studyQuestionPanelMinimumWidth, panelGroupWidth);
+      const collapsedPanelWidth = Math.min(studyQuestionPanelCollapsedWidth, panelGroupWidth);
       const minimumViewportWidth = Math.min(
         studyQuestionViewportMinimumWidth,
         Math.max(0, panelGroupWidth - minimumPanelWidth)
@@ -164,13 +196,20 @@ function ViewerLayout({
       );
       const nextPanelSize = getStudyQuestionPanelSize(nextPanelWidth, panelGroupWidth);
 
+      setStudyQuestionPanelCollapsedSize(
+        getStudyQuestionPanelSize(collapsedPanelWidth, panelGroupWidth)
+      );
       setStudyQuestionPanelMinSize(getStudyQuestionPanelSize(minimumPanelWidth, panelGroupWidth));
       setStudyQuestionPanelMaxSize(getStudyQuestionPanelSize(maximumPanelWidth, panelGroupWidth));
       setStudyQuestionViewportMinSize(
         getStudyQuestionPanelSize(minimumViewportWidth, panelGroupWidth)
       );
       setStudyQuestionPanelSize(nextPanelSize);
-      studyQuestionPanelApiRef.current?.resize(nextPanelSize);
+      if (studyQuestionPanelCollapsed) {
+        studyQuestionPanelApiRef.current?.collapse?.();
+      } else {
+        studyQuestionPanelApiRef.current?.resize(nextPanelSize);
+      }
     };
 
     updateResizableSizes();
@@ -179,13 +218,26 @@ function ViewerLayout({
     observer.observe(panelGroupElement);
 
     return () => observer.disconnect();
-  }, [getStudyQuestionPanelSize, isStudyReview, studyQuestionPanelWidth]);
+  }, [
+    getStudyQuestionPanelSize,
+    isStudyReview,
+    studyQuestionPanelCollapsed,
+    studyQuestionPanelWidth,
+  ]);
 
   const handleStudyQuestionPanelResize = useCallback(
     size => {
       if (isStudyReview) {
         return;
       }
+
+      if (studyQuestionPanelApiRef.current?.isCollapsed?.()) {
+        setStudyQuestionPanelCollapsed(true);
+        requestViewportResize();
+        return;
+      }
+
+      setStudyQuestionPanelCollapsed(false);
 
       const nextPanelWidth = Math.min(
         studyQuestionPanelMaximumWidth,
@@ -216,6 +268,26 @@ function ViewerLayout({
     },
     [requestViewportResize]
   );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(mobileViewportMediaQuery);
+    const handleViewportChange = event => {
+      if (!event.matches) {
+        return;
+      }
+
+      setLeftPanelClosed(true);
+      setRightPanelClosed(true);
+      setStudyQuestionCollapsed(true);
+    };
+
+    handleViewportChange(mediaQuery);
+    mediaQuery.addEventListener('change', handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleViewportChange);
+    };
+  }, [setStudyQuestionCollapsed]);
 
   const LoadingIndicatorProgress = customizationService.getCustomization(
     'ui.loadingIndicatorProgress'
@@ -383,12 +455,37 @@ function ViewerLayout({
                         order={1}
                         id="viewerLayoutResizableStudyQuestionPanel"
                         defaultSize={studyQuestionPanelSize}
-                        minSize={studyQuestionPanelMinSize}
+                        minSize={
+                          studyQuestionPanelCollapsed
+                            ? studyQuestionPanelCollapsedSize
+                            : studyQuestionPanelMinSize
+                        }
                         maxSize={studyQuestionPanelMaxSize}
+                        collapsible
+                        collapsedSize={studyQuestionPanelCollapsedSize}
                         onResize={handleStudyQuestionPanelResize}
+                        onCollapse={() => setStudyQuestionPanelCollapsed(true)}
+                        onExpand={() => setStudyQuestionPanelCollapsed(false)}
                         ref={studyQuestionPanelApiRef}
                       >
-                        <StudyQuestionPanel servicesManager={servicesManager} />
+                        {studyQuestionPanelCollapsed ? (
+                          <aside className="border-input bg-muted/30 flex h-full w-full flex-col items-center border-l pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setStudyQuestionCollapsed(false)}
+                              aria-label="Open study question panel"
+                              title="Open study question panel"
+                              className="hover:bg-primary/10 focus:ring-primary-main text-primary flex h-8 w-8 items-center justify-center rounded transition focus:outline-none focus:ring-2"
+                            >
+                              <Icons.NavigationPanelReveal className="h-5 w-5" />
+                            </button>
+                          </aside>
+                        ) : (
+                          <StudyQuestionPanel
+                            servicesManager={servicesManager}
+                            onToggleCollapsed={() => setStudyQuestionCollapsed(true)}
+                          />
+                        )}
                       </ResizablePanel>
                     </ResizablePanelGroup>
                   </div>

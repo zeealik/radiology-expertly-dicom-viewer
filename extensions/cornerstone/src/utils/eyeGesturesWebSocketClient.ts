@@ -19,15 +19,6 @@ type EyeGesturesClientOptions = {
 
 declare global {
   interface Window {
-    OHIFAndroidGazeBridge?: {
-      capture: (
-        screenX: number,
-        screenY: number,
-        timestamp?: number,
-        metadata?: Record<string, unknown>
-      ) => unknown;
-      isReady: () => boolean;
-    };
     OHIFEyeGesturesClient?: {
       connect: () => void;
       disconnect: () => void;
@@ -36,6 +27,10 @@ declare global {
       getUrl: () => string;
     };
   }
+}
+
+function getGazeCaptureBridge() {
+  return (window as any).OHIFGazeCaptureBridge;
 }
 
 const DEFAULT_URL = 'ws://localhost:8765/gaze';
@@ -107,12 +102,13 @@ function installMouseFallback() {
 
   const handlePointerMove = (event: PointerEvent) => {
     const now = Date.now();
+    const gazeCaptureBridge = getGazeCaptureBridge();
 
-    if (now - lastCaptureAt < 80 || !window.OHIFAndroidGazeBridge?.isReady?.()) {
+    if (now - lastCaptureAt < 80 || !gazeCaptureBridge?.isReady?.()) {
       return;
     }
 
-    const record = window.OHIFAndroidGazeBridge.capture(event.clientX, event.clientY, now, {
+    const record = gazeCaptureBridge.capture(event.clientX, event.clientY, now, {
       source: 'mouse-fallback',
       confidence: 0.5,
     });
@@ -176,7 +172,7 @@ function handleGazeMessage(message: EyeGesturesMessage) {
     message.message || 'Receiving EyeGestures gaze samples.'
   );
 
-  window.OHIFAndroidGazeBridge?.capture?.(x, y, normalizeTimestamp(message.timestamp), {
+  getGazeCaptureBridge()?.capture?.(x, y, normalizeTimestamp(message.timestamp), {
     source: 'eyegestures',
     confidence: typeof message.confidence === 'number' ? message.confidence : undefined,
     fixation: typeof message.fixation === 'boolean' ? message.fixation : undefined,

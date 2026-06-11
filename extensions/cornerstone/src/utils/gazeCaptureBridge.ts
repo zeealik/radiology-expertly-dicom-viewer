@@ -43,11 +43,7 @@ type GazeRecord = {
 
 declare global {
   interface Window {
-    AndroidBridge?: {
-      onGazeBridgeReady?: (payload: string) => void;
-      onGazeRecord?: (record: string) => void;
-    };
-    OHIFAndroidGazeBridge?: {
+    OHIFGazeCaptureBridge?: {
       capture: (
         screenX: number,
         screenY: number,
@@ -58,7 +54,12 @@ declare global {
       getRegisteredViewports: () => string[];
       isReady: () => boolean;
     };
-    receiveGazePoint?: (screenX: number, screenY: number, timestamp?: number) => GazeRecord | null;
+    receiveGazePoint?: (
+      screenX: number,
+      screenY: number,
+      timestamp?: number,
+      metadata?: Partial<GazeRecord>
+    ) => GazeRecord | null;
   }
 }
 
@@ -131,39 +132,23 @@ function getDicomMetadata(imageId?: string, primaryViewportData?: any) {
   };
 }
 
-function notifyAndroid(record: GazeRecord) {
-  const payload = JSON.stringify(record);
-
+function notifyGazeRecord(record: GazeRecord) {
   window.dispatchEvent(
-    new CustomEvent('ohif-android-gaze-record', {
+    new CustomEvent('ohif-gaze-record', {
       detail: record,
     })
   );
-
-  try {
-    window.AndroidBridge?.onGazeRecord?.(payload);
-  } catch (error) {
-    console.warn('[OHIFAndroidGazeBridge] Failed to send gaze record to AndroidBridge', error);
-  }
 }
 
 function notifyBridgeReady() {
-  const payload = JSON.stringify({
-    ready: true,
-    viewportIds: Array.from(registeredViewports.keys()),
-  });
-
   window.dispatchEvent(
-    new CustomEvent('ohif-android-gaze-bridge-ready', {
-      detail: JSON.parse(payload),
+    new CustomEvent('ohif-gaze-capture-ready', {
+      detail: {
+        ready: true,
+        viewportIds: Array.from(registeredViewports.keys()),
+      },
     })
   );
-
-  try {
-    window.AndroidBridge?.onGazeBridgeReady?.(payload);
-  } catch (error) {
-    console.warn('[OHIFAndroidGazeBridge] Failed to notify AndroidBridge readiness', error);
-  }
 }
 
 function capture(
@@ -225,31 +210,36 @@ function capture(
     ...dicomMetadata,
   };
 
-  notifyAndroid(record);
+  notifyGazeRecord(record);
 
   return record;
 }
 
-export function registerAndroidGazeViewport(
+export function registerGazeViewport(
   servicesManager: ServicesManager,
   viewportId: string,
   element: HTMLElement
 ) {
   servicesManagerRef = servicesManager;
   registeredViewports.set(viewportId, { viewportId, element });
-  installAndroidGazeBridge();
+  installGazeCaptureBridge();
   notifyBridgeReady();
 }
 
-export function unregisterAndroidGazeViewport(viewportId: string) {
+export function unregisterGazeViewport(viewportId: string) {
   registeredViewports.delete(viewportId);
 }
 
-export function installAndroidGazeBridge() {
-  window.OHIFAndroidGazeBridge = {
+export function installGazeCaptureBridge() {
+  window.OHIFGazeCaptureBridge = {
     capture,
-    captureJson: (screenX: number, screenY: number, timestamp?: number) => {
-      const record = capture(screenX, screenY, timestamp);
+    captureJson: (
+      screenX: number,
+      screenY: number,
+      timestamp?: number,
+      metadata?: Partial<GazeRecord>
+    ) => {
+      const record = capture(screenX, screenY, timestamp, metadata);
       return record ? JSON.stringify(record) : null;
     },
     getRegisteredViewports: () => Array.from(registeredViewports.keys()),

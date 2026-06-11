@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import * as cs3DTools from '@cornerstonejs/tools';
 import { Enums, eventTarget, getEnabledElement } from '@cornerstonejs/core';
 import { MeasurementService, useViewportRef } from '@ohif/core';
@@ -18,10 +19,7 @@ import { getViewportPresentations } from '../utils/presentations/getViewportPres
 import { useSynchronizersStore } from '../stores/useSynchronizersStore';
 import ActiveViewportBehavior from '../utils/ActiveViewportBehavior';
 import { WITH_NAVIGATION } from '../services/ViewportService/CornerstoneViewportService';
-import {
-  registerAndroidGazeViewport,
-  unregisterAndroidGazeViewport,
-} from '../utils/androidGazeBridge';
+import { registerGazeViewport, unregisterGazeViewport } from '../utils/gazeCaptureBridge';
 
 const STACK = 'stack';
 
@@ -64,6 +62,11 @@ const OHIFCornerstoneViewport = React.memo(
       isHangingProtocolLayout,
     } = props;
     const viewportId = viewportOptions.viewportId;
+    const location = useLocation();
+    const routeSearchParams = new URLSearchParams(location.search);
+    const isStudyReview = routeSearchParams.get('studyReview') === '1';
+    const isStudyFeedback = routeSearchParams.get('studyFeedback') === '1';
+    const shouldCaptureGaze = !isStudyReview && !isStudyFeedback;
 
     if (!viewportId) {
       throw new Error('Viewport ID is required');
@@ -202,7 +205,6 @@ const OHIFCornerstoneViewport = React.memo(
     // disable the element upon unmounting
     useEffect(() => {
       cornerstoneViewportService.enableViewport(viewportId, elementRef.current);
-      registerAndroidGazeViewport(servicesManager, viewportId, elementRef.current);
 
       eventTarget.addEventListener(Enums.Events.ELEMENT_ENABLED, elementEnabledHandler);
 
@@ -210,7 +212,6 @@ const OHIFCornerstoneViewport = React.memo(
 
       return () => {
         const viewportInfo = cornerstoneViewportService.getViewportInfo(viewportId);
-        unregisterAndroidGazeViewport(viewportId);
 
         if (!viewportInfo) {
           return;
@@ -232,6 +233,21 @@ const OHIFCornerstoneViewport = React.memo(
         eventTarget.removeEventListener(Enums.Events.ELEMENT_ENABLED, elementEnabledHandler);
       };
     }, []);
+
+    useEffect(() => {
+      const element = elementRef.current;
+
+      if (!element || !shouldCaptureGaze) {
+        unregisterGazeViewport(viewportId);
+        return;
+      }
+
+      registerGazeViewport(servicesManager, viewportId, element);
+
+      return () => {
+        unregisterGazeViewport(viewportId);
+      };
+    }, [servicesManager, shouldCaptureGaze, viewportId]);
 
     // subscribe to displaySet metadata invalidation (updates)
     // Currently, if the metadata changes we need to re-render the display set
@@ -329,7 +345,7 @@ const OHIFCornerstoneViewport = React.memo(
               }
             }}
           ></div>
-          <LiveGazeHeatmapOverlay viewportId={viewportId} />
+          {shouldCaptureGaze && <LiveGazeHeatmapOverlay viewportId={viewportId} />}
           <CornerstoneOverlays
             viewportId={viewportId}
             toolBarService={toolbarService}

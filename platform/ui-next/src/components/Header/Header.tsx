@@ -59,13 +59,13 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[56px] items-center">
-          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center">
-            <div className="mr-3 inline-flex items-center">
+        <div className="flex h-[56px] min-w-0 items-center gap-2 overflow-hidden">
+          <div className="flex min-w-0 flex-none items-center">
+            <div className="inline-flex min-w-0 items-center">
               {isReturnEnabled && (
                 <button
                   type="button"
-                  className="text-primary hover:bg-muted focus-visible:ring-ring flex h-12 w-[72px] cursor-pointer items-center justify-center rounded focus-visible:outline-none focus-visible:ring-1"
+                  className="text-primary hover:bg-muted focus-visible:ring-ring flex h-12 w-14 flex-none cursor-pointer items-center justify-center rounded focus-visible:outline-none focus-visible:ring-1 md:w-[72px]"
                   onClick={onClickReturn}
                   aria-label="Return to work list"
                   data-cy="return-to-work-list"
@@ -73,22 +73,22 @@ function Header({
                   <Icons.ArrowLeftBold className="h-10 w-10" />
                 </button>
               )}
-              <div className="ml-4">
+              <div className="ml-1 flex h-10 w-8 flex-none items-center overflow-hidden md:ml-2 [&_svg]:max-w-none [&_svg]:shrink-0">
                 {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
               </div>
             </div>
           </div>
-          <div className="absolute top-1/2 left-[250px] h-8 -translate-y-1/2">{Secondary}</div>
-          <div className="absolute inset-x-[320px] top-1/2 flex -translate-y-1/2 justify-center overflow-hidden max-2xl:inset-x-[280px] max-xl:inset-x-[220px] max-lg:inset-x-[160px] max-md:inset-x-[96px]">
-            <div className="flex max-w-full items-center justify-center gap-2 overflow-x-auto px-2">
+          <div className="hidden h-8 flex-none items-center lg:flex">{Secondary}</div>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div className="flex max-w-full items-center justify-start gap-1 overflow-x-auto px-1 md:justify-center md:gap-2 md:px-2">
               {children}
             </div>
           </div>
-          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 select-none items-center">
+          <div className="flex flex-none select-none items-center">
             {UndoRedo}
-            <div className="border-muted mx-1.5 h-[25px] border-r"></div>
+            <div className="border-muted mx-0.5 h-[25px] border-r md:mx-1.5"></div>
             {PatientInfo}
-            <div className="border-muted mx-1.5 h-[25px] border-r"></div>
+            <div className="border-muted mx-0.5 h-[25px] border-r md:mx-1.5"></div>
             <div className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

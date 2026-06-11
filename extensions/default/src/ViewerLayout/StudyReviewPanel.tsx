@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
 import { useViewportGrid } from '@ohif/ui-next';
-import type { HeatmapPoint } from './gazeHeatmapUtils';
+import type { GazeRecord, HeatmapPoint } from './gazeHeatmapUtils';
 
 type SubmittedAnswer = {
   questionId: string;
@@ -15,9 +16,16 @@ type SubmittedAnswer = {
 
 type StudyReviewData = {
   answers?: SubmittedAnswer[];
+  gazeRecords?: GazeRecord[];
   heatmapsBySlice?: Record<string, HeatmapPoint[]>;
   numberOfSlices?: number | null;
   studyInstanceUIDs?: string[];
+};
+
+type CanvasHeatmapPoint = {
+  x: number;
+  y: number;
+  value: number;
 };
 
 const REVIEW_STORAGE_KEY = 'ohif.studyQuestionReview';
@@ -104,20 +112,90 @@ function useActiveSlice(
   return sliceState;
 }
 
-function clearReviewMode() {
+function getClearReviewPath() {
   const url = new URL(window.location.href);
   url.searchParams.delete('studyReview');
-  window.location.assign(`${url.pathname}${url.search}`);
+
+  return `${url.pathname}${url.search}`;
 }
 
-function openFeedbackPage() {
+function getFeedbackPath() {
   const url = new URL(window.location.href);
   url.searchParams.delete('studyReview');
   url.searchParams.set('studyFeedback', '1');
-  window.location.assign(`${url.pathname}${url.search}`);
+
+  return `${url.pathname}${url.search}`;
+}
+
+function getWeightedGazeValue(record: GazeRecord) {
+  const confidence = typeof record.confidence === 'number' ? record.confidence : 0.7;
+  const fixationBoost = record.fixation === true ? 0.2 : 0;
+
+  return Math.min(Math.max(confidence + fixationBoost, 0.2), 1);
+}
+
+function getCanvasHeatmapPoints({
+  reviewData,
+  slice,
+  viewport,
+  rect,
+}: {
+  reviewData: StudyReviewData;
+  slice: number | null;
+  viewport: any;
+  rect: DOMRect;
+}): CanvasHeatmapPoint[] {
+  if (!slice) {
+    return [];
+  }
+
+  const gazeRecords = reviewData.gazeRecords || [];
+
+  if (gazeRecords.length) {
+    return gazeRecords.reduce<CanvasHeatmapPoint[]>((points, record) => {
+      if (record.sliceIndex !== slice - 1) {
+        return points;
+      }
+
+      const world = Array.isArray(record.world) ? record.world : undefined;
+
+      if (world?.length === 3 && typeof viewport?.worldToCanvas === 'function') {
+        const [x, y] = viewport.worldToCanvas(world);
+
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          points.push({
+            x,
+            y,
+            value: getWeightedGazeValue(record),
+          });
+          return points;
+        }
+      }
+
+      if (
+        typeof record.viewportNormalizedX === 'number' &&
+        typeof record.viewportNormalizedY === 'number'
+      ) {
+        points.push({
+          x: record.viewportNormalizedX * rect.width,
+          y: record.viewportNormalizedY * rect.height,
+          value: getWeightedGazeValue(record),
+        });
+      }
+
+      return points;
+    }, []);
+  }
+
+  return (reviewData.heatmapsBySlice?.[String(slice)] || []).map(point => ({
+    x: (point.x / 100) * rect.width,
+    y: (point.y / 100) * rect.height,
+    value: point.value,
+  }));
 }
 
 function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement {
+  const navigate = useNavigate();
   const [{ activeViewportId }] = useViewportGrid();
   const { cornerstoneViewportService } = servicesManager.services;
   const reviewData = useMemo(getStoredReviewData, []);
@@ -135,7 +213,7 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
         </div>
         <button
           type="button"
-          onClick={clearReviewMode}
+          onClick={() => navigate(getClearReviewPath())}
           className="bg-primary-main hover:bg-primary-light rounded px-3 py-2 text-xs font-semibold text-white"
         >
           Back
@@ -168,7 +246,7 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
       <div className="border-input border-t p-5">
         <button
           type="button"
-          onClick={openFeedbackPage}
+          onClick={() => navigate(getFeedbackPath())}
           className="bg-primary-main hover:bg-primary-light focus:ring-primary-main w-full rounded px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
         >
           Continue to Feedback
@@ -184,8 +262,9 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const reviewData = useMemo(getStoredReviewData, []);
   const { slice } = useActiveSlice(cornerstoneViewportService, activeViewportId);
-  const heatmapsBySlice = reviewData.heatmapsBySlice || {};
-  const points = slice ? heatmapsBySlice[String(slice)] || [] : [];
+  const hasGazeData =
+    !!reviewData.gazeRecords?.length ||
+    !!(slice && reviewData.heatmapsBySlice?.[String(slice)]?.length);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -204,6 +283,16 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
         return;
       }
 
+      const viewport = activeViewportId
+        ? cornerstoneViewportService?.getCornerstoneViewport(activeViewportId)
+        : null;
+      const points = getCanvasHeatmapPoints({
+        reviewData,
+        slice,
+        viewport,
+        rect,
+      });
+
       canvas.width = width;
       canvas.height = height;
       context.clearRect(0, 0, width, height);
@@ -216,11 +305,16 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
       context.globalCompositeOperation = 'screen';
 
       points.forEach(point => {
-        const x = (point.x / 100) * rect.width;
-        const y = (point.y / 100) * rect.height;
         const value = Math.min(Math.max(point.value, 0.2), 1);
         const radius = 42 + value * 34;
-        const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+        const gradient = context.createRadialGradient(
+          point.x,
+          point.y,
+          0,
+          point.x,
+          point.y,
+          radius
+        );
 
         gradient.addColorStop(0, `rgba(239, 68, 68, ${0.72 * value})`);
         gradient.addColorStop(0.34, `rgba(250, 204, 21, ${0.48 * value})`);
@@ -229,7 +323,7 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
 
         context.fillStyle = gradient;
         context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.arc(point.x, point.y, radius, 0, Math.PI * 2);
         context.fill();
       });
     };
@@ -238,11 +332,18 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
 
     const observer = new ResizeObserver(render);
     observer.observe(canvas);
+    const viewport = activeViewportId
+      ? cornerstoneViewportService?.getCornerstoneViewport(activeViewportId)
+      : null;
+    const element = viewport?.element;
+
+    element?.addEventListener(Enums.Events.IMAGE_RENDERED, render);
 
     return () => {
       observer.disconnect();
+      element?.removeEventListener(Enums.Events.IMAGE_RENDERED, render);
     };
-  }, [points]);
+  }, [activeViewportId, cornerstoneViewportService, reviewData, slice]);
 
   if (!slice) {
     return null;
@@ -255,7 +356,7 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
         className="absolute inset-0 h-full w-full opacity-80 mix-blend-screen"
       />
       <div className="text-muted-foreground absolute bottom-3 left-3 rounded bg-black/70 px-2 py-1 text-xs">
-        {points.length ? 'EyeGestures gaze heatmap' : 'No gaze data captured'}
+        {hasGazeData ? 'EyeGestures gaze heatmap' : 'No gaze data captured'}
       </div>
     </div>
   );

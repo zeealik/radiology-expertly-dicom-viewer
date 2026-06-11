@@ -19,15 +19,6 @@ type EyeGesturesConstructor = new (
 declare global {
   interface Window {
     EyeGestures?: EyeGesturesConstructor;
-    OHIFAndroidGazeBridge?: {
-      capture: (
-        screenX: number,
-        screenY: number,
-        timestamp?: number,
-        metadata?: Record<string, unknown>
-      ) => unknown;
-      isReady: () => boolean;
-    };
     OHIFEyeGesturesClient?: {
       connect: () => void;
       disconnect: () => void;
@@ -37,6 +28,10 @@ declare global {
       recalibrate?: () => void;
     };
   }
+}
+
+function getGazeCaptureBridge() {
+  return (window as any).OHIFGazeCaptureBridge;
 }
 
 const DEFAULT_SCRIPT_URL = 'https://eyegestures.com/eyegestures.js';
@@ -216,7 +211,7 @@ function handleGaze(point: [number, number], calibration?: boolean) {
       : 'EyeGesturesLite tracking active.'
   );
 
-  window.OHIFAndroidGazeBridge?.capture?.(x, y, Date.now(), {
+  getGazeCaptureBridge()?.capture?.(x, y, Date.now(), {
     source: 'eyegestures-browser',
     calibration: Boolean(calibration),
   });

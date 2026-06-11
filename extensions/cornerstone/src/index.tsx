@@ -59,7 +59,7 @@ import utils from './utils';
 import { useMeasurementTracking } from './hooks/useMeasurementTracking';
 import { setUpSegmentationEventHandlers } from './utils/setUpSegmentationEventHandlers';
 import { setUpAnnotationEventHandlers } from './utils/setUpAnnotationEventHandlers';
-import { installAndroidGazeBridge } from './utils/androidGazeBridge';
+import { installGazeCaptureBridge } from './utils/gazeCaptureBridge';
 import {
   installEyeGesturesBrowserClient,
   uninstallEyeGesturesBrowserClient,
@@ -107,7 +107,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
   id,
 
   onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
-    installAndroidGazeBridge();
+    installGazeCaptureBridge();
     installEyeGesturesBrowserClient();
 
     const { cornerstoneViewportService, toolbarService, segmentationService } =
