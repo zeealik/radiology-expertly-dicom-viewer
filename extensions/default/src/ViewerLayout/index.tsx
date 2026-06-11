@@ -422,7 +422,24 @@ function ViewerLayout({
                       />
                       <StudyReviewHeatmapOverlay servicesManager={servicesManager} />
                     </div>
-                    <StudyReviewPanel servicesManager={servicesManager} />
+                    {studyQuestionPanelCollapsed ? (
+                      <aside className="border-input bg-muted/30 flex h-10 w-full shrink-0 items-center justify-center border-t md:h-full md:w-10 md:flex-col md:border-l md:border-t-0 md:pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setStudyQuestionCollapsed(false)}
+                          aria-label="Open review panel"
+                          title="Open review panel"
+                          className="hover:bg-primary/10 focus:ring-primary-main text-primary flex h-8 w-8 items-center justify-center rounded transition focus:outline-none focus:ring-2"
+                        >
+                          <Icons.NavigationPanelReveal className="h-5 w-5" />
+                        </button>
+                      </aside>
+                    ) : (
+                      <StudyReviewPanel
+                        servicesManager={servicesManager}
+                        onToggleCollapsed={() => setStudyQuestionCollapsed(true)}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div

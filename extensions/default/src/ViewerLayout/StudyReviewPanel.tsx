@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
-import { useViewportGrid } from '@ohif/ui-next';
+import { Icons, useViewportGrid } from '@ohif/ui-next';
 import type { GazeRecord, HeatmapPoint } from './gazeHeatmapUtils';
 
 type SubmittedAnswer = {
@@ -30,6 +30,23 @@ type CanvasHeatmapPoint = {
 
 const REVIEW_STORAGE_KEY = 'ohif.studyQuestionReview';
 
+type StackLikeViewport = {
+  element?: HTMLElement;
+  getCurrentImageIdIndex?: () => number;
+  getNumberOfSlices?: () => number;
+};
+
+type CornerstoneViewportService = {
+  EVENTS?: {
+    VIEWPORT_DATA_CHANGED?: string;
+  };
+  getCornerstoneViewport?: (viewportId: string) => StackLikeViewport | VolumeViewport3D | undefined;
+  subscribe?: (
+    eventName: string,
+    callback: (event: { viewportId?: string }) => void
+  ) => { unsubscribe?: () => void };
+};
+
 function getStoredReviewData(): StudyReviewData {
   const bridgeData = (window as any).OHIFStudyReviewData;
   if (bridgeData?.answers || bridgeData?.heatmapsBySlice) {
@@ -45,7 +62,7 @@ function getStoredReviewData(): StudyReviewData {
 }
 
 function useActiveSlice(
-  cornerstoneViewportService,
+  cornerstoneViewportService: CornerstoneViewportService | undefined,
   activeViewportId
 ): {
   slice: number | null;
@@ -61,17 +78,17 @@ function useActiveSlice(
       return;
     }
 
-    const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
-    const element = viewport?.element;
+    let removeViewportListeners: (() => void) | undefined;
+    let retryIntervalId: number | undefined;
 
-    if (!viewport || !element || viewport instanceof VolumeViewport3D) {
-      return;
-    }
-
-    const updateSlice = event => {
-      const latestViewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+    const syncSliceState = event => {
+      const latestViewport = cornerstoneViewportService.getCornerstoneViewport?.(activeViewportId);
       if (!latestViewport || latestViewport instanceof VolumeViewport3D) {
-        return;
+        setSliceState({
+          slice: null,
+          numberOfSlices: null,
+        });
+        return false;
       }
 
       const { imageIndex, newImageIdIndex = imageIndex, imageIdIndex } = event.detail || {};
@@ -86,26 +103,66 @@ function useActiveSlice(
         slice: typeof nextImageIndex === 'number' ? nextImageIndex + 1 : null,
         numberOfSlices: latestViewport.getNumberOfSlices?.() ?? null,
       });
+
+      return true;
     };
 
-    try {
-      const currentImageIndex = viewport.getCurrentImageIdIndex?.();
-      setSliceState({
-        slice: typeof currentImageIndex === 'number' ? currentImageIndex + 1 : null,
-        numberOfSlices: viewport.getNumberOfSlices?.() ?? null,
-      });
-    } catch {
-      // ignore
+    const attachViewportListeners = () => {
+      const viewport = cornerstoneViewportService.getCornerstoneViewport?.(activeViewportId);
+      const element = viewport?.element;
+
+      if (!viewport || !element || viewport instanceof VolumeViewport3D) {
+        syncSliceState({ detail: {} });
+        return false;
+      }
+
+      removeViewportListeners?.();
+
+      const updateSlice = event => {
+        syncSliceState(event);
+      };
+
+      syncSliceState({ detail: {} });
+
+      element.addEventListener(Enums.Events.STACK_NEW_IMAGE, updateSlice);
+      element.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, updateSlice);
+      element.addEventListener(Enums.Events.IMAGE_RENDERED, updateSlice);
+
+      removeViewportListeners = () => {
+        element.removeEventListener(Enums.Events.STACK_NEW_IMAGE, updateSlice);
+        element.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, updateSlice);
+        element.removeEventListener(Enums.Events.IMAGE_RENDERED, updateSlice);
+      };
+
+      return true;
+    };
+
+    if (!attachViewportListeners()) {
+      retryIntervalId = window.setInterval(() => {
+        if (attachViewportListeners() && retryIntervalId) {
+          window.clearInterval(retryIntervalId);
+          retryIntervalId = undefined;
+        }
+      }, 250);
     }
 
-    element.addEventListener(Enums.Events.STACK_NEW_IMAGE, updateSlice);
-    element.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, updateSlice);
-    element.addEventListener(Enums.Events.IMAGE_RENDERED, updateSlice);
+    const viewportDataChangedEvent = cornerstoneViewportService.EVENTS?.VIEWPORT_DATA_CHANGED || '';
+    const subscription =
+      viewportDataChangedEvent && cornerstoneViewportService.subscribe
+        ? cornerstoneViewportService.subscribe(viewportDataChangedEvent, event => {
+            if (!event?.viewportId || event.viewportId === activeViewportId) {
+              attachViewportListeners();
+            }
+          })
+        : undefined;
 
     return () => {
-      element.removeEventListener(Enums.Events.STACK_NEW_IMAGE, updateSlice);
-      element.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, updateSlice);
-      element.removeEventListener(Enums.Events.IMAGE_RENDERED, updateSlice);
+      if (retryIntervalId) {
+        window.clearInterval(retryIntervalId);
+      }
+
+      subscription?.unsubscribe?.();
+      removeViewportListeners?.();
     };
   }, [activeViewportId, cornerstoneViewportService]);
 
@@ -194,7 +251,14 @@ function getCanvasHeatmapPoints({
   }));
 }
 
-function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement {
+type StudyReviewPanelProps = withAppTypes<{
+  onToggleCollapsed?: () => void;
+}>;
+
+function StudyReviewPanel({
+  servicesManager,
+  onToggleCollapsed,
+}: StudyReviewPanelProps): React.ReactElement {
   const navigate = useNavigate();
   const [{ activeViewportId }] = useViewportGrid();
   const { cornerstoneViewportService } = servicesManager.services;
@@ -211,13 +275,26 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
             {slice ? `Slice ${slice}${numberOfSlices ? ` / ${numberOfSlices}` : ''}` : 'Slice -'}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate(getClearReviewPath())}
-          className="bg-primary-main hover:bg-primary-light rounded px-3 py-2 text-xs font-semibold text-white"
-        >
-          Back
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate(getClearReviewPath())}
+            className="bg-primary-main hover:bg-primary-light rounded px-3 py-2 text-xs font-semibold text-white"
+          >
+            Back
+          </button>
+          {onToggleCollapsed && (
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label="Collapse review panel"
+              title="Collapse review panel"
+              className="hover:bg-primary/10 focus:ring-primary-main text-primary flex h-8 w-8 items-center justify-center rounded transition focus:outline-none focus:ring-2"
+            >
+              <Icons.SidePanelCloseRight className="h-5 w-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-5">
@@ -259,6 +336,7 @@ function StudyReviewPanel({ servicesManager }: withAppTypes): React.ReactElement
 function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.ReactElement {
   const [{ activeViewportId }] = useViewportGrid();
   const { cornerstoneViewportService } = servicesManager.services;
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const reviewData = useMemo(getStoredReviewData, []);
   const { slice } = useActiveSlice(cornerstoneViewportService, activeViewportId);
@@ -274,7 +352,19 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
     }
 
     const render = () => {
-      const rect = canvas.getBoundingClientRect();
+      const viewport = activeViewportId
+        ? cornerstoneViewportService?.getCornerstoneViewport(activeViewportId)
+        : null;
+      const viewportElement = viewport?.element;
+      const root = rootRef.current;
+
+      if (!viewportElement || !root) {
+        return;
+      }
+
+      const rootRect = root.getBoundingClientRect();
+      const viewportRect = viewportElement.getBoundingClientRect();
+      const rect = viewportRect;
       const width = Math.max(Math.floor(rect.width * window.devicePixelRatio), 1);
       const height = Math.max(Math.floor(rect.height * window.devicePixelRatio), 1);
       const context = canvas.getContext('2d');
@@ -283,9 +373,10 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
         return;
       }
 
-      const viewport = activeViewportId
-        ? cornerstoneViewportService?.getCornerstoneViewport(activeViewportId)
-        : null;
+      canvas.style.left = `${viewportRect.left - rootRect.left}px`;
+      canvas.style.top = `${viewportRect.top - rootRect.top}px`;
+      canvas.style.width = `${viewportRect.width}px`;
+      canvas.style.height = `${viewportRect.height}px`;
       const points = getCanvasHeatmapPoints({
         reviewData,
         slice,
@@ -332,15 +423,27 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
 
     const observer = new ResizeObserver(render);
     observer.observe(canvas);
+    if (rootRef.current) {
+      observer.observe(rootRef.current);
+    }
+
     const viewport = activeViewportId
       ? cornerstoneViewportService?.getCornerstoneViewport(activeViewportId)
       : null;
     const element = viewport?.element;
 
+    if (element) {
+      observer.observe(element);
+    }
+
+    element?.addEventListener(Enums.Events.STACK_NEW_IMAGE, render);
+    element?.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, render);
     element?.addEventListener(Enums.Events.IMAGE_RENDERED, render);
 
     return () => {
       observer.disconnect();
+      element?.removeEventListener(Enums.Events.STACK_NEW_IMAGE, render);
+      element?.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, render);
       element?.removeEventListener(Enums.Events.IMAGE_RENDERED, render);
     };
   }, [activeViewportId, cornerstoneViewportService, reviewData, slice]);
@@ -350,10 +453,13 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10">
+    <div
+      ref={rootRef}
+      className="pointer-events-none absolute inset-0 z-10"
+    >
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full opacity-80 mix-blend-screen"
+        className="absolute opacity-80 mix-blend-screen"
       />
       <div className="text-muted-foreground absolute bottom-3 left-3 rounded bg-black/70 px-2 py-1 text-xs">
         {hasGazeData ? 'EyeGestures gaze heatmap' : 'No gaze data captured'}
