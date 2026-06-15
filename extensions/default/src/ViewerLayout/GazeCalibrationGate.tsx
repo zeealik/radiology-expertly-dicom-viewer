@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import HeadTrackingOverlay from './HeadTrackingOverlay';
 
 const CALIB_STORAGE_PREFIX = 'ohif.gazeCalibration:';
 const CALIB_EVENT = 'ohif-gaze-calibration';
@@ -47,6 +48,25 @@ function markCalibrated(uids: string[]) {
       detail: { status: 'done', studyKey: key },
     })
   );
+}
+
+// Start head tracking and anchor its safe zone to the just-calibrated posture.
+// Fully soft — never throws, never blocks the study if the camera/model is down.
+function anchorHeadTrackingBaseline() {
+  void (async () => {
+    try {
+      await window.OHIFHeadTracking?.start?.();
+      window.setTimeout(() => {
+        try {
+          window.OHIFHeadTracking?.captureBaseline?.();
+        } catch {
+          // ignore
+        }
+      }, 800);
+    } catch {
+      // ignore
+    }
+  })();
 }
 
 declare global {
@@ -124,8 +144,18 @@ function GazeCalibrationGate({
       // ignore
     }
     markCalibrated(studyInstanceUIDs);
+    // Anchor the head-tracking safe zone to the posture used during calibration.
+    anchorHeadTrackingBaseline();
     setPhase('success');
   }, [studyInstanceUIDs]);
+
+  // Already calibrated on mount (reload / re-entry): still anchor a baseline.
+  useEffect(() => {
+    if (isCalibratedInSession(studyInstanceUIDs)) {
+      anchorHeadTrackingBaseline();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   const failCalibration = useCallback((message: string) => {
     try {
@@ -226,7 +256,12 @@ function GazeCalibrationGate({
   }, [phase, failCalibration, finishCalibration]);
 
   if (phase === 'success') {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <HeadTrackingOverlay studyInstanceUIDs={studyInstanceUIDs} />
+      </>
+    );
   }
 
   // During active calibration we must NOT cover the screen, otherwise

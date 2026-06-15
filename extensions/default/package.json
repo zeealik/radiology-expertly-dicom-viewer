@@ -49,6 +49,7 @@
   "dependencies": {
     "@babel/runtime": "7.28.2",
     "@cornerstonejs/calculate-suv": "1.1.0",
+    "@mediapipe/tasks-vision": "^0.10.20",
     "lodash.get": "4.4.2",
     "lodash.uniqby": "4.7.0",
     "react-color": "2.19.3"

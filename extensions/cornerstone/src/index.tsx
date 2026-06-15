@@ -64,6 +64,10 @@ import {
   installEyeGesturesBrowserClient,
   uninstallEyeGesturesBrowserClient,
 } from './utils/eyeGesturesBrowserClient';
+import {
+  installHeadTracking,
+  uninstallHeadTracking,
+} from '@ohif/extension-default/src/ViewerLayout/headTracking';
 import update from 'immutability-helper';
 export * from './components';
 
@@ -109,6 +113,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
   onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
     installGazeCaptureBridge();
     installEyeGesturesBrowserClient();
+    installHeadTracking();
 
     const { cornerstoneViewportService, toolbarService, segmentationService } =
       servicesManager.services;
@@ -164,6 +169,7 @@ const cornerstoneExtension: Types.Extensions.Extension = {
   getPanelModule,
   onModeExit: ({ servicesManager }: withAppTypes): void => {
     uninstallEyeGesturesBrowserClient();
+    uninstallHeadTracking();
     unsubscriptions.forEach(unsubscribe => unsubscribe());
     // Clear the unsubscriptions
     unsubscriptions.length = 0;
