@@ -4,6 +4,7 @@ import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
 import { Icons, useViewportGrid } from '@ohif/ui-next';
 import { getHeatmapsBySlice } from './gazeHeatmapUtils';
 import type { GazeRecord } from './gazeHeatmapUtils';
+import { getStudyInstanceUIDs } from './studyParams';
 
 type StudyQuestion = {
   id: string;
@@ -87,20 +88,6 @@ const DEFAULT_QUESTIONS: StudyQuestion[] = [
     text: 'What is your primary impression from this study?',
   },
 ];
-
-function getStudyInstanceUIDs(): string[] {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const uids = params.getAll('StudyInstanceUIDs');
-    if (uids.length) {
-      return uids.flatMap(v => v.split(',')).filter(Boolean);
-    }
-  } catch {
-    // ignore
-  }
-
-  return [];
-}
 
 function getQuestionSliceTriggers(question: StudyQuestion): number[] {
   return [question.triggerSlice, ...(question.triggerSlices || [])].filter(
@@ -247,7 +234,7 @@ function StudyQuestionPanel({
     const handleGazeRecord = (event: Event) => {
       const record = (event as CustomEvent<GazeRecord>).detail;
 
-      if (!record) {
+      if (!record || (record as { calibration?: boolean }).calibration === true) {
         return;
       }
 

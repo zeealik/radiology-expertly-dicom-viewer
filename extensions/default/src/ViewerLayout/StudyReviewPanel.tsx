@@ -2,6 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Enums, VolumeViewport3D } from '@cornerstonejs/core';
 import { Icons, useViewportGrid } from '@ohif/ui-next';
+import {
+  computeContentMask,
+  getViewportCanvas,
+  isContentAt,
+  type ContentMask,
+} from './gazeContentMask';
+import { computeGazeWeights } from './gazeWeighting';
 import type { GazeRecord, HeatmapPoint } from './gazeHeatmapUtils';
 
 type SubmittedAnswer = {
@@ -25,8 +32,13 @@ type StudyReviewData = {
 type CanvasHeatmapPoint = {
   x: number;
   y: number;
+  // normalized (0-1) position within the viewport, used for content masking
+  nx: number;
+  ny: number;
   value: number;
 };
+
+type WeightedGazeRecord = GazeRecord & { weight: number };
 
 const REVIEW_STORAGE_KEY = 'ohif.studyQuestionReview';
 
@@ -184,20 +196,15 @@ function getFeedbackPath() {
   return `${url.pathname}${url.search}`;
 }
 
-function getWeightedGazeValue(record: GazeRecord) {
-  const confidence = typeof record.confidence === 'number' ? record.confidence : 0.7;
-  const fixationBoost = record.fixation === true ? 0.2 : 0;
-
-  return Math.min(Math.max(confidence + fixationBoost, 0.2), 1);
-}
-
 function getCanvasHeatmapPoints({
   reviewData,
+  weightedRecords,
   slice,
   viewport,
   rect,
 }: {
   reviewData: StudyReviewData;
+  weightedRecords: WeightedGazeRecord[];
   slice: number | null;
   viewport: any;
   rect: DOMRect;
@@ -206,10 +213,8 @@ function getCanvasHeatmapPoints({
     return [];
   }
 
-  const gazeRecords = reviewData.gazeRecords || [];
-
-  if (gazeRecords.length) {
-    return gazeRecords.reduce<CanvasHeatmapPoint[]>((points, record) => {
+  if (weightedRecords.length) {
+    return weightedRecords.reduce<CanvasHeatmapPoint[]>((points, record) => {
       if (record.sliceIndex !== slice - 1) {
         return points;
       }
@@ -223,7 +228,9 @@ function getCanvasHeatmapPoints({
           points.push({
             x,
             y,
-            value: getWeightedGazeValue(record),
+            nx: rect.width ? x / rect.width : 0,
+            ny: rect.height ? y / rect.height : 0,
+            value: record.weight,
           });
           return points;
         }
@@ -236,7 +243,9 @@ function getCanvasHeatmapPoints({
         points.push({
           x: record.viewportNormalizedX * rect.width,
           y: record.viewportNormalizedY * rect.height,
-          value: getWeightedGazeValue(record),
+          nx: record.viewportNormalizedX,
+          ny: record.viewportNormalizedY,
+          value: record.weight,
         });
       }
 
@@ -247,6 +256,8 @@ function getCanvasHeatmapPoints({
   return (reviewData.heatmapsBySlice?.[String(slice)] || []).map(point => ({
     x: (point.x / 100) * rect.width,
     y: (point.y / 100) * rect.height,
+    nx: point.x / 100,
+    ny: point.y / 100,
     value: point.value,
   }));
 }
@@ -338,7 +349,12 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
   const { cornerstoneViewportService } = servicesManager.services;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const maskRef = useRef<{ sliceIndex: number | null; mask: ContentMask | null } | null>(null);
   const reviewData = useMemo(getStoredReviewData, []);
+  const weightedRecords = useMemo<WeightedGazeRecord[]>(
+    () => computeGazeWeights(reviewData.gazeRecords || []),
+    [reviewData]
+  );
   const { slice } = useActiveSlice(cornerstoneViewportService, activeViewportId);
   const hasGazeData =
     !!reviewData.gazeRecords?.length ||
@@ -379,6 +395,7 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
       canvas.style.height = `${viewportRect.height}px`;
       const points = getCanvasHeatmapPoints({
         reviewData,
+        weightedRecords,
         slice,
         viewport,
         rect,
@@ -392,10 +409,22 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
         return;
       }
 
+      let mask: ContentMask | null;
+      if (maskRef.current && maskRef.current.sliceIndex === slice) {
+        mask = maskRef.current.mask;
+      } else {
+        mask = computeContentMask(getViewportCanvas(viewport));
+        maskRef.current = { sliceIndex: slice, mask };
+      }
+
       context.scale(window.devicePixelRatio, window.devicePixelRatio);
       context.globalCompositeOperation = 'screen';
 
       points.forEach(point => {
+        if (!isContentAt(mask, point.nx, point.ny)) {
+          return;
+        }
+
         const value = Math.min(Math.max(point.value, 0.2), 1);
         const radius = 42 + value * 34;
         const gradient = context.createRadialGradient(
@@ -446,7 +475,7 @@ function StudyReviewHeatmapOverlay({ servicesManager }: withAppTypes): React.Rea
       element?.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, render);
       element?.removeEventListener(Enums.Events.IMAGE_RENDERED, render);
     };
-  }, [activeViewportId, cornerstoneViewportService, reviewData, slice]);
+  }, [activeViewportId, cornerstoneViewportService, reviewData, weightedRecords, slice]);
 
   if (!slice) {
     return null;

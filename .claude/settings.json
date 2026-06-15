@@ -7,7 +7,12 @@
       "Bash(docker rm *)",
       "Bash(curl -sf -o /dev/null http://localhost:8043/dicom-web/studies)",
       "Bash(curl -s -i -X OPTIONS -H \"Origin: http://localhost:3000\" -H \"Access-Control-Request-Method: GET\" http://localhost:8043/dicom-web/studies)",
-      "Bash(curl -s -i -H \"Origin: http://localhost:3000\" http://localhost:8043/dicom-web/studies)"
+      "Bash(curl -s -i -H \"Origin: http://localhost:3000\" http://localhost:8043/dicom-web/studies)",
+      "Bash(yarn jest *)",
+      "Bash(node -e \"const p=require\\('./extensions/cornerstone/package.json'\\); console.log\\('exports:',JSON.stringify\\(p.exports,null,2\\)\\); console.log\\('main:',p.main,'module:',p.module\\)\")",
+      "Bash(git mv *)",
+      "Bash(node -e \"const p=require\\('./extensions/default/package.json'\\); console.log\\('exports:',JSON.stringify\\(p.exports\\)\\)\")",
+      "Bash(lsof -ti:3000)"
     ],
     "additionalDirectories": [
       "/tmp",

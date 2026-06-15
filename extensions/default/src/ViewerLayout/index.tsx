@@ -10,6 +10,8 @@ import SidePanelWithServices from '../Components/SidePanelWithServices';
 import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
+import GazeCalibrationGate from './GazeCalibrationGate';
+import { getStudyInstanceUIDs } from './studyParams';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -68,6 +70,7 @@ function ViewerLayout({
   const searchParams = new URLSearchParams(location.search);
   const isStudyReview = searchParams.get('studyReview') === '1';
   const isStudyFeedback = searchParams.get('studyFeedback') === '1';
+  const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
   const studyQuestionPanelApiRef = useRef(null);
   const [studyQuestionPanelWidth, setStudyQuestionPanelWidth] = useState(
@@ -442,6 +445,7 @@ function ViewerLayout({
                     )}
                   </div>
                 ) : (
+                  <GazeCalibrationGate studyInstanceUIDs={studyInstanceUIDs}>
                   <div
                     ref={studyQuestionPanelGroupRef}
                     className="bg-background relative h-full min-h-0 flex-1 overflow-hidden"
@@ -506,6 +510,7 @@ function ViewerLayout({
                       </ResizablePanel>
                     </ResizablePanelGroup>
                   </div>
+                  </GazeCalibrationGate>
                 )}
               </div>
             </ResizablePanel>

@@ -26,6 +26,7 @@ declare global {
       getMessage: () => string | undefined;
       getUrl: () => string;
       recalibrate?: () => void;
+      setCalibrationUiVisible?: (visible: boolean) => void;
     };
   }
 }
@@ -42,7 +43,10 @@ const STATUS_EVENT = 'ohif-eyegestures-status';
 const VIDEO_ID = 'video';
 const STATUS_ID = 'status';
 const ERROR_ID = 'error';
-const EYE_GESTURES_UI_IDS = ['calibrationOverlay', 'logoDivEyeGestures', 'cursor', 'calib_cursor'];
+// The calibration cues we reveal so the user can follow the real target. The
+// EyeGestures logo is intentionally excluded so it stays hidden at all times.
+const EYE_GESTURES_CALIBRATION_UI_IDS = ['calibrationOverlay', 'cursor', 'calib_cursor'];
+const EYE_GESTURES_ALWAYS_HIDDEN_IDS = ['logoDivEyeGestures'];
 
 let installed = false;
 let connecting = false;
@@ -52,6 +56,9 @@ let currentScriptUrl = DEFAULT_SCRIPT_URL;
 let currentStylesheetUrl = DEFAULT_STYLESHEET_URL;
 let gestures: InstanceType<EyeGesturesConstructor> | null = null;
 let cleanupUiSuppressor: (() => void) | null = null;
+// When true, EyeGestures' own calibration UI (the red dot / overlay) is allowed
+// to show so the user can follow the real target that drives sampling.
+let calibrationUiVisible = false;
 
 function getEyeGesturesConstructor(): EyeGesturesConstructor | undefined {
   if (window.EyeGestures) {
@@ -126,8 +133,8 @@ function ensureEyeGesturesDom() {
   ensureElement(ERROR_ID, 'div');
 }
 
-function hideEyeGesturesUi() {
-  EYE_GESTURES_UI_IDS.forEach(id => {
+function hideElementsById(ids: string[]) {
+  ids.forEach(id => {
     const element = document.getElementById(id);
 
     if (!element) {
@@ -137,6 +144,40 @@ function hideEyeGesturesUi() {
     element.style.display = 'none';
     element.style.pointerEvents = 'none';
   });
+}
+
+function hideEyeGesturesUi() {
+  // The EyeGestures logo is always hidden, even during calibration.
+  hideElementsById(EYE_GESTURES_ALWAYS_HIDDEN_IDS);
+
+  // While calibrating with visible cues, leave EyeGestures' own target dot /
+  // overlay alone so the user can follow the real target.
+  if (calibrationUiVisible) {
+    return;
+  }
+
+  hideElementsById(EYE_GESTURES_CALIBRATION_UI_IDS);
+}
+
+function setCalibrationUiVisible(visible: boolean) {
+  calibrationUiVisible = visible;
+
+  if (visible) {
+    // Reveal the calibration cues EyeGestures created and lift them above our
+    // calibration overlay (z-index 1000) so the target dot shows. The logo
+    // stays hidden.
+    EYE_GESTURES_CALIBRATION_UI_IDS.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.style.removeProperty('display');
+        element.style.removeProperty('pointer-events');
+        element.style.zIndex = '1001';
+      }
+    });
+    hideElementsById(EYE_GESTURES_ALWAYS_HIDDEN_IDS);
+  } else {
+    hideEyeGesturesUi();
+  }
 }
 
 function installEyeGesturesUiSuppressor() {
@@ -204,11 +245,26 @@ function handleGaze(point: [number, number], calibration?: boolean) {
   }
 
   const nextStatus = calibration ? 'calibrating' : 'connected';
+
+  // Once real tracking starts, re-hide EyeGestures' calibration cues so they
+  // don't linger over the study image.
+  if (!calibration && calibrationUiVisible) {
+    setCalibrationUiVisible(false);
+  }
+
   dispatchStatus(
     nextStatus,
     calibration
-      ? 'EyeGesturesLite calibrating; follow the red circle.'
-      : 'EyeGesturesLite tracking active.'
+      ? 'Calibrating — keep following the moving dot.'
+      : 'Eye tracking active.'
+  );
+
+  // Emit every raw point regardless of whether a viewport is registered, so the
+  // calibration gate can observe progress before gaze capture is enabled.
+  window.dispatchEvent(
+    new CustomEvent('ohif-eyegestures-gaze', {
+      detail: { x, y, calibration: Boolean(calibration) },
+    })
   );
 
   getGazeCaptureBridge()?.capture?.(x, y, Date.now(), {
@@ -248,7 +304,10 @@ async function connect() {
 
     dispatchStatus('waiting', 'Requesting webcam permission.');
     gestures = new EyeGestures(VIDEO_ID, handleGaze);
-    gestures.invisible?.();
+    // Note: we intentionally do NOT call gestures.invisible() — once EyeGestures
+    // hides its cursor internally it cannot be brought back for a visible
+    // recalibration. Instead our DOM suppressor (gated by calibrationUiVisible)
+    // controls whether the cues are shown.
     gestures.showCalibrationInstructions = onRead => onRead();
     cleanupUiSuppressor = installEyeGesturesUiSuppressor();
     gestures.start();
@@ -278,6 +337,7 @@ export function installEyeGesturesBrowserClient(options?: EyeGesturesBrowserClie
     getMessage: () => lastMessage,
     getUrl: () => currentScriptUrl,
     recalibrate: () => gestures?.recalibrate?.(),
+    setCalibrationUiVisible,
   };
 
   connect();

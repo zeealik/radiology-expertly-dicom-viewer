@@ -20,6 +20,22 @@ import { useSynchronizersStore } from '../stores/useSynchronizersStore';
 import ActiveViewportBehavior from '../utils/ActiveViewportBehavior';
 import { WITH_NAVIGATION } from '../services/ViewportService/CornerstoneViewportService';
 import { registerGazeViewport, unregisterGazeViewport } from '../utils/gazeCaptureBridge';
+import { useGazeCalibrationStatus } from '../utils/useGazeCalibrationStatus';
+
+function getStudyInstanceUIDsFromSearch(search: string): string[] {
+  try {
+    const params = new URLSearchParams(search);
+    const uids = params.getAll('StudyInstanceUIDs');
+
+    if (uids.length) {
+      return [...new Set(uids.flatMap(value => value.split(',')).filter(Boolean))];
+    }
+  } catch {
+    // ignore
+  }
+
+  return [];
+}
 
 const STACK = 'stack';
 
@@ -66,7 +82,9 @@ const OHIFCornerstoneViewport = React.memo(
     const routeSearchParams = new URLSearchParams(location.search);
     const isStudyReview = routeSearchParams.get('studyReview') === '1';
     const isStudyFeedback = routeSearchParams.get('studyFeedback') === '1';
-    const shouldCaptureGaze = !isStudyReview && !isStudyFeedback;
+    const studyInstanceUIDs = getStudyInstanceUIDsFromSearch(location.search);
+    const isCalibrated = useGazeCalibrationStatus(studyInstanceUIDs);
+    const shouldCaptureGaze = !isStudyReview && !isStudyFeedback && isCalibrated;
 
     if (!viewportId) {
       throw new Error('Viewport ID is required');
@@ -345,7 +363,12 @@ const OHIFCornerstoneViewport = React.memo(
               }
             }}
           ></div>
-          {shouldCaptureGaze && <LiveGazeHeatmapOverlay viewportId={viewportId} />}
+          {shouldCaptureGaze && (
+            <LiveGazeHeatmapOverlay
+              viewportId={viewportId}
+              servicesManager={servicesManager}
+            />
+          )}
           <CornerstoneOverlays
             viewportId={viewportId}
             toolBarService={toolbarService}
