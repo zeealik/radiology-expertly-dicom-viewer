@@ -11,15 +11,7 @@ export type HeadStatus =
   | 'low-light'
   | 'unknown';
 
-export type HeadDirection =
-  | 'left'
-  | 'right'
-  | 'up'
-  | 'down'
-  | 'forward'
-  | 'back'
-  | 'center'
-  | null;
+export type HeadDirection = 'left' | 'right' | 'up' | 'down' | 'forward' | 'back' | 'center' | null;
 
 export type HeadPose = { yaw: number; pitch: number; roll: number }; // degrees
 
@@ -78,13 +70,13 @@ export const DEFAULT_THRESHOLDS: HeadThresholds = {
 export const STATUS_MESSAGES: Record<HeadStatus, string> = {
   ok: '',
   unknown: '',
-  'too-close': 'You are leaning too close to the screen.',
-  'too-far': 'You are too far from the screen, please move closer.',
-  'shifted-left': 'Your position changed. Move back to your original position.',
-  'shifted-right': 'Your position changed. Move back to your original position.',
-  'shifted-up': 'Your position changed. Move back to your original position.',
-  'shifted-down': 'Your position changed. Move back to your original position.',
-  'head-turned': 'Please keep your head straight and centered.',
+  'too-close': 'You moved too close to the screen. Lean back to the calibration position.',
+  'too-far': 'You moved too far from the screen. Move closer to the calibration position.',
+  'shifted-left': 'Your head shifted left. Move right to return to the calibration position.',
+  'shifted-right': 'Your head shifted right. Move left to return to the calibration position.',
+  'shifted-up': 'Your head shifted up. Move down to return to the calibration position.',
+  'shifted-down': 'Your head shifted down. Move up to return to the calibration position.',
+  'head-turned': 'Your head is turned or tilted. Face the screen squarely.',
   'face-lost': 'Your face is not detected, please return to view.',
   'low-light': 'Your environment is too dark for accurate tracking.',
 };
@@ -157,7 +149,8 @@ export function computeIpd(landmarks: Landmark[], frameAspect: number): number {
     return 0;
   }
 
-  const left = landmarks[LEFT_IRIS] ?? midpoint(landmarks[LEFT_EYE_OUTER], landmarks[LEFT_EYE_INNER]);
+  const left =
+    landmarks[LEFT_IRIS] ?? midpoint(landmarks[LEFT_EYE_OUTER], landmarks[LEFT_EYE_INNER]);
   const right =
     landmarks[RIGHT_IRIS] ?? midpoint(landmarks[RIGHT_EYE_INNER], landmarks[RIGHT_EYE_OUTER]);
 
@@ -176,7 +169,9 @@ export function getFaceCenter(landmarks: Landmark[]): { x: number; y: number } {
   return nose ? { x: nose.x, y: nose.y } : { x: 0.5, y: 0.5 };
 }
 
-export function getFaceBox(landmarks: Landmark[]): { x: number; y: number; w: number; h: number } | null {
+export function getFaceBox(
+  landmarks: Landmark[]
+): { x: number; y: number; w: number; h: number } | null {
   if (!landmarks?.length) {
     return null;
   }

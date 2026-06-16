@@ -14,7 +14,16 @@
       "Bash(node -e \"const p=require\\('./extensions/default/package.json'\\); console.log\\('exports:',JSON.stringify\\(p.exports\\)\\)\")",
       "Bash(yarn add *)",
       "Bash(node -e \"console.log\\(require\\('@mediapipe/tasks-vision/package.json'\\).version\\)\")",
-      "Bash(node -e \"const p=require\\('./node_modules/@mediapipe/tasks-vision/package.json'\\); console.log\\('module:',p.module,'main:',p.main,'exports:',JSON.stringify\\(p.exports\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./node_modules/@mediapipe/tasks-vision/package.json'\\); console.log\\('module:',p.module,'main:',p.main,'exports:',JSON.stringify\\(p.exports\\)\\)\")",
+      "Bash(curl -s --max-time 20 https://eyegestures.com/eyegestures.js -o eg.js)",
+      "Bash(curl -s --max-time 20 \"https://eyegestures.com/EyegesturesEngine.js\" -o egengine.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(ls node_modules/.bin/tsc)",
+      "Bash(ls tsconfig*.json)",
+      "Bash(node_modules/.bin/tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --moduleResolution node --target es2018 --lib es2020,dom extensions/default/src/ViewerLayout/GazeCalibrationGate.tsx extensions/cornerstone/src/utils/eyeGesturesBrowserClient.ts)",
+      "Bash(git stash *)",
+      "Bash(node_modules/.bin/tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --moduleResolution node --target es2018 --lib es2020,dom extensions/cornerstone/src/utils/eyeGesturesBrowserClient.ts)",
+      "Bash(node_modules/.bin/tsc --noEmit --jsx react --esModuleInterop --skipLibCheck --moduleResolution node --target es2018 --lib es2020,dom extensions/default/src/ViewerLayout/GazeCalibrationGate.tsx)"
     ],
     "additionalDirectories": [
       "/tmp",

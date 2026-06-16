@@ -43,6 +43,10 @@ const STATUS_EVENT = 'ohif-eyegestures-status';
 const VIDEO_ID = 'video';
 const STATUS_ID = 'status';
 const ERROR_ID = 'error';
+// The moving calibration target EyeGestures renders. Its left/top are updated
+// every frame to the active calibration point, so reading it tells the gate
+// which of the calibration circles is currently being shown.
+const CALIB_CURSOR_ID = 'calib_cursor';
 // The calibration cues we reveal so the user can follow the real target. The
 // EyeGestures logo is intentionally excluded so it stays hidden at all times.
 const EYE_GESTURES_CALIBRATION_UI_IDS = ['calibrationOverlay', 'cursor', 'calib_cursor'];
@@ -236,6 +240,25 @@ function loadStylesheet(url: string) {
   document.head.appendChild(link);
 }
 
+// The library offsets calib_cursor's left/top by half its 200px size so the dot
+// is centred on the target point. Undo that offset to recover the target centre.
+const CALIB_CURSOR_HALF_SIZE = 100;
+
+function getCalibrationTarget(): { tx: number; ty: number } | undefined {
+  const cursor = document.getElementById(CALIB_CURSOR_ID);
+  if (!cursor) {
+    return undefined;
+  }
+
+  const left = parseFloat(cursor.style.left);
+  const top = parseFloat(cursor.style.top);
+  if (!Number.isFinite(left) || !Number.isFinite(top)) {
+    return undefined;
+  }
+
+  return { tx: left + CALIB_CURSOR_HALF_SIZE, ty: top + CALIB_CURSOR_HALF_SIZE };
+}
+
 function handleGaze(point: [number, number], calibration?: boolean) {
   const x = Number(point?.[0]);
   const y = Number(point?.[1]);
@@ -259,11 +282,21 @@ function handleGaze(point: [number, number], calibration?: boolean) {
       : 'Eye tracking active.'
   );
 
+  // While calibrating, surface which target circle is currently shown so the
+  // gate can require the user to follow every circle before completing.
+  const target = calibration ? getCalibrationTarget() : undefined;
+
   // Emit every raw point regardless of whether a viewport is registered, so the
   // calibration gate can observe progress before gaze capture is enabled.
   window.dispatchEvent(
     new CustomEvent('ohif-eyegestures-gaze', {
-      detail: { x, y, calibration: Boolean(calibration) },
+      detail: {
+        x,
+        y,
+        calibration: Boolean(calibration),
+        targetX: target?.tx,
+        targetY: target?.ty,
+      },
     })
   );
 

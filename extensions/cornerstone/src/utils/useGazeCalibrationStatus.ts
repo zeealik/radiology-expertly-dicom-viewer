@@ -7,6 +7,8 @@ declare global {
   interface Window {
     OHIFGazeCalibration?: {
       isCalibrated: (uids: string[]) => boolean;
+      reset?: (uids: string[], reason?: string) => void;
+      recalibrate?: (uids: string[]) => void;
     };
   }
 }

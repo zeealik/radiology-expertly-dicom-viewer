@@ -9,11 +9,24 @@ const CALIB_EVENT = 'ohif-gaze-calibration';
 // (`calibration: false` / status 'connected'). We drive our overlay off those
 // signals rather than imposing our own targets.
 const NO_SIGNAL_TIMEOUT_MS = 12000; // no calibration signal at all => failed
-const TRACKING_CONFIRM_SAMPLES = 5; // live (non-calibration) samples to confirm success
-const GRACE_PERIOD_MS = 2500; // min wait before tracking-only completion is accepted
-// EyeGestures Lite default calibration uses a fixed number of points; used only
-// to render a smooth progress bar.
-const ESTIMATED_CALIBRATION_POINTS = 25;
+// The user must visibly follow every calibration circle before we accept that
+// calibration is complete. EyeGestures shows a fixed grid of circles, one at a
+// time; we count the distinct target positions it moves the dot to and refuse
+// to finish until all of them have been followed. Without this guard the gate
+// completes after the very first circle as soon as a stray tracking sample
+// arrives.
+const REQUIRED_CALIBRATION_CIRCLES = 9;
+// Two circles are treated as the same target when their centres fall within
+// this many pixels of each other, absorbing the sub-pixel jitter the library
+// applies to the dot position each frame.
+const CIRCLE_MATCH_TOLERANCE_PX = 40;
+// Safety valve: if the library ever ships a grid with fewer than the required
+// circles, don't hang forever. After this many sustained real-tracking samples
+// following at least one calibration circle, accept completion anyway.
+const TRACKING_FALLBACK_SAMPLES = 60;
+// Once all circles are followed, wait this long before switching to the study so
+// the final reading settles and the user sees the "complete" state briefly.
+const COMPLETION_SETTLE_MS = 600;
 
 type CalibrationPhase = 'intro' | 'calibrating' | 'success' | 'failed';
 
@@ -32,6 +45,22 @@ function isCalibratedInSession(uids: string[]): boolean {
   } catch {
     return false;
   }
+}
+
+function clearCalibrated(uids: string[], reason = 'reset') {
+  const key = calibKey(uids);
+
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(CALIB_EVENT, {
+      detail: { status: reason, studyKey: key },
+    })
+  );
 }
 
 function markCalibrated(uids: string[]) {
@@ -73,6 +102,8 @@ declare global {
   interface Window {
     OHIFGazeCalibration?: {
       isCalibrated: (uids: string[]) => boolean;
+      reset: (uids: string[], reason?: string) => void;
+      recalibrate: (uids: string[]) => void;
     };
     OHIFEyeGesturesClient?: {
       connect: () => void;
@@ -111,11 +142,13 @@ export function useGazeCalibrationStatus(uids: string[]): boolean {
 
 type GazeCalibrationGateProps = {
   studyInstanceUIDs: string[];
+  calibrationSessionId?: string;
   children: React.ReactNode;
 };
 
 function GazeCalibrationGate({
   studyInstanceUIDs,
+  calibrationSessionId,
   children,
 }: GazeCalibrationGateProps): React.ReactElement {
   const key = calibKey(studyInstanceUIDs);
@@ -129,12 +162,63 @@ function GazeCalibrationGate({
   const calibrationSamplesRef = useRef(0);
   const trackingSamplesRef = useRef(0);
   const sawCalibrationRef = useRef(false);
+  // Distinct calibration circles the user has followed so far this run. Each
+  // entry is the centre of one target; completion is blocked until this reaches
+  // REQUIRED_CALIBRATION_CIRCLES.
+  const visitedCirclesRef = useRef<Array<{ x: number; y: number }>>([]);
+  const completionTimerRef = useRef<number | undefined>();
+  const lastCalibrationSessionIdRef = useRef<string | undefined>();
+
+  // Each viewer entry starts with a fresh gaze posture. Do not reuse a stale
+  // calibration from a previous study-reading session.
+  useEffect(() => {
+    if (!calibrationSessionId || lastCalibrationSessionIdRef.current === calibrationSessionId) {
+      return;
+    }
+
+    lastCalibrationSessionIdRef.current = calibrationSessionId;
+    clearCalibrated(studyInstanceUIDs, 'new-session');
+    setFailureMessage('');
+    setStatusMessage('');
+    setProgress(0);
+    setPhase('intro');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calibrationSessionId]);
 
   // re-evaluate when the study changes
   useEffect(() => {
     setPhase(isCalibratedInSession(studyInstanceUIDs) ? 'success' : 'intro');
     setProgress(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  // Smart head-tracking reset and manual reset events must bring the prompt
+  // back even after the gate has already reached success.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ status?: string; studyKey?: string }>).detail;
+
+      if (detail?.studyKey && detail.studyKey !== key) {
+        return;
+      }
+
+      if (detail?.status === 'done') {
+        setPhase('success');
+        return;
+      }
+
+      setFailureMessage('');
+      setProgress(0);
+      setStatusMessage(
+        detail?.status === 'new-session'
+          ? ''
+          : 'Head position changed enough to affect gaze accuracy. Please recalibrate before continuing.'
+      );
+      setPhase('intro');
+    };
+
+    window.addEventListener(CALIB_EVENT, handler);
+    return () => window.removeEventListener(CALIB_EVENT, handler);
   }, [key]);
 
   const finishCalibration = useCallback(() => {
@@ -168,11 +252,18 @@ function GazeCalibrationGate({
   }, []);
 
   const startCalibration = useCallback(() => {
+    clearCalibrated(studyInstanceUIDs, 'recalibrating');
     setFailureMessage('');
+    setStatusMessage('');
     setProgress(0);
     calibrationSamplesRef.current = 0;
     trackingSamplesRef.current = 0;
     sawCalibrationRef.current = false;
+    visitedCirclesRef.current = [];
+    if (completionTimerRef.current !== undefined) {
+      window.clearTimeout(completionTimerRef.current);
+      completionTimerRef.current = undefined;
+    }
     setPhase('calibrating');
 
     try {
@@ -182,7 +273,7 @@ function GazeCalibrationGate({
     } catch {
       // failures surface via the no-signal timeout
     }
-  }, []);
+  }, [studyInstanceUIDs]);
 
   // drive the overlay off EyeGestures' calibration + tracking signals
   useEffect(() => {
@@ -197,16 +288,55 @@ function GazeCalibrationGate({
       }
     };
 
-    // Give recalibration a moment to begin before we accept tracking-only
-    // samples as completion, so the user actually gets the visible dot loop
-    // rather than skipping straight through if EyeGestures was already connected.
-    let graceElapsed = false;
-    const graceTimer = window.setTimeout(() => {
-      graceElapsed = true;
-    }, GRACE_PERIOD_MS);
+    const allCirclesFollowed = () =>
+      visitedCirclesRef.current.length >= REQUIRED_CALIBRATION_CIRCLES;
+
+    // Once the user has followed all required circles, calibration is done. We
+    // can't rely on the library emitting a clean run of real-tracking samples to
+    // signal completion (it keeps re-showing calibration points, which resets any
+    // tracking counter), so we finish on a short settle delay after the final
+    // circle. completing guards against scheduling it more than once.
+    let completing = false;
+    const completeAfterAllCircles = () => {
+      if (completing) {
+        return;
+      }
+      completing = true;
+      setProgress(1);
+      setStatusMessage('Calibration complete.');
+      completionTimerRef.current = window.setTimeout(() => {
+        finishCalibration();
+      }, COMPLETION_SETTLE_MS);
+    };
+
+    // Record the circle currently being shown. Returns true when it is a new,
+    // not-yet-followed target so we can advance progress one circle at a time.
+    const noteCircle = (tx?: number, ty?: number): boolean => {
+      if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+        return false;
+      }
+
+      const isNew = !visitedCirclesRef.current.some(
+        circle =>
+          Math.hypot(circle.x - (tx as number), circle.y - (ty as number)) <=
+          CIRCLE_MATCH_TOLERANCE_PX
+      );
+
+      if (isNew) {
+        visitedCirclesRef.current.push({ x: tx as number, y: ty as number });
+      }
+
+      return isNew;
+    };
 
     const handleGaze = (event: Event) => {
-      const record = (event as CustomEvent<{ calibration?: boolean }>).detail;
+      const record = (
+        event as CustomEvent<{
+          calibration?: boolean;
+          targetX?: number;
+          targetY?: number;
+        }>
+      ).detail;
       if (!record) {
         return;
       }
@@ -216,20 +346,36 @@ function GazeCalibrationGate({
         calibrationSamplesRef.current += 1;
         // a fresh calibration run resets the tracking-completion counter
         trackingSamplesRef.current = 0;
-        setProgress(
-          Math.min(calibrationSamplesRef.current / ESTIMATED_CALIBRATION_POINTS, 0.95)
+        noteCircle(record.targetX, record.targetY);
+        const circlesDone = Math.min(
+          visitedCirclesRef.current.length,
+          REQUIRED_CALIBRATION_CIRCLES
+        );
+
+        if (allCirclesFollowed()) {
+          // Every circle followed — finish even if the library keeps cycling.
+          completeAfterAllCircles();
+          return;
+        }
+
+        // Progress reflects how many of the required circles have been followed.
+        setProgress(Math.min(circlesDone / REQUIRED_CALIBRATION_CIRCLES, 0.95));
+        setStatusMessage(
+          `Follow the dot — circle ${circlesDone} of ${REQUIRED_CALIBRATION_CIRCLES}.`
         );
       } else {
-        // Real (non-calibration) tracking samples => calibration has finished.
+        // Real (non-calibration) tracking samples => the library has switched to
+        // live tracking. Accept as completion only once every circle has been
+        // followed; otherwise an early stray sample would end calibration after
+        // the first dot.
         trackingSamplesRef.current += 1;
-        setProgress(1);
-        // Complete once tracking is sustained, but only after either the grace
-        // period (in case it was already connected) or a real calibration run.
-        if (
-          trackingSamplesRef.current >= TRACKING_CONFIRM_SAMPLES &&
-          (sawCalibrationRef.current || graceElapsed)
-        ) {
-          finishCalibration();
+
+        const fallback =
+          sawCalibrationRef.current &&
+          trackingSamplesRef.current >= TRACKING_FALLBACK_SAMPLES;
+
+        if (allCirclesFollowed() || fallback) {
+          completeAfterAllCircles();
         }
       }
     };
@@ -238,8 +384,7 @@ function GazeCalibrationGate({
     window.addEventListener('ohif-eyegestures-gaze', handleGaze);
 
     const noSignalTimer = window.setTimeout(() => {
-      const sawAnySignal =
-        sawCalibrationRef.current || trackingSamplesRef.current > 0;
+      const sawAnySignal = sawCalibrationRef.current || trackingSamplesRef.current > 0;
       if (!sawAnySignal) {
         failCalibration(
           'No eye-tracking signal detected. Check that your webcam is connected and camera access is allowed, then try again.'
@@ -251,7 +396,10 @@ function GazeCalibrationGate({
       window.removeEventListener('ohif-eyegestures-status', handleStatus);
       window.removeEventListener('ohif-eyegestures-gaze', handleGaze);
       window.clearTimeout(noSignalTimer);
-      window.clearTimeout(graceTimer);
+      if (completionTimerRef.current !== undefined) {
+        window.clearTimeout(completionTimerRef.current);
+        completionTimerRef.current = undefined;
+      }
     };
   }, [phase, failCalibration, finishCalibration]);
 
@@ -277,7 +425,7 @@ function GazeCalibrationGate({
         className={`fixed inset-0 z-[1000] flex justify-center ${
           isCalibrating
             ? 'pointer-events-none items-end bg-black/30 pb-10'
-            : 'items-center bg-black/85'
+            : 'bg-black/85 items-center'
         }`}
       >
         <div className="bg-muted/80 border-input pointer-events-auto relative z-10 mx-4 max-w-md rounded-lg border p-8 text-center backdrop-blur">
@@ -285,9 +433,9 @@ function GazeCalibrationGate({
             <>
               <h2 className="text-foreground text-xl font-semibold">Eye calibration required</h2>
               <p className="text-muted-foreground mt-3 text-sm leading-6">
-                Before reviewing this study we need to calibrate eye tracking. A moving dot will
-                appear on screen — follow it with your eyes. Keep your head still and your face
-                well lit.
+                Before reviewing this study we need to calibrate eye tracking. A dot will appear at
+                nine positions across the screen — follow each one with your eyes until all nine are
+                done. Keep your head still and your face well lit.
               </p>
               {statusMessage && (
                 <p className="text-muted-foreground mt-3 text-xs">{statusMessage}</p>
@@ -339,6 +487,8 @@ function GazeCalibrationGate({
 if (typeof window !== 'undefined') {
   window.OHIFGazeCalibration = {
     isCalibrated: isCalibratedInSession,
+    reset: clearCalibrated,
+    recalibrate: (uids: string[]) => clearCalibrated(uids, 'manual-recalibrate'),
   };
 }
 

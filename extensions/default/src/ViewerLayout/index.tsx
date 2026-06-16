@@ -71,6 +71,7 @@ function ViewerLayout({
   const isStudyReview = searchParams.get('studyReview') === '1';
   const isStudyFeedback = searchParams.get('studyFeedback') === '1';
   const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
+  const calibrationSessionId = `${location.key}:${[...studyInstanceUIDs].sort().join(',')}`;
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
   const studyQuestionPanelApiRef = useRef(null);
   const [studyQuestionPanelWidth, setStudyQuestionPanelWidth] = useState(
@@ -445,71 +446,74 @@ function ViewerLayout({
                     )}
                   </div>
                 ) : (
-                  <GazeCalibrationGate studyInstanceUIDs={studyInstanceUIDs}>
-                  <div
-                    ref={studyQuestionPanelGroupRef}
-                    className="bg-background relative h-full min-h-0 flex-1 overflow-hidden"
-                    onMouseEnter={handleMouseEnter}
+                  <GazeCalibrationGate
+                    studyInstanceUIDs={studyInstanceUIDs}
+                    calibrationSessionId={calibrationSessionId}
                   >
-                    <ResizablePanelGroup
-                      direction="horizontal"
-                      onLayout={requestViewportResize}
+                    <div
+                      ref={studyQuestionPanelGroupRef}
+                      className="bg-background relative h-full min-h-0 flex-1 overflow-hidden"
+                      onMouseEnter={handleMouseEnter}
                     >
-                      <ResizablePanel
-                        order={0}
-                        id="viewerLayoutResizableStudyQuestionViewportPanel"
-                        minSize={studyQuestionViewportMinSize}
+                      <ResizablePanelGroup
+                        direction="horizontal"
+                        onLayout={requestViewportResize}
                       >
-                        <div className="bg-background relative flex h-full min-h-0 min-w-0 items-center justify-center overflow-hidden">
-                          <ViewportGridComp
-                            servicesManager={servicesManager}
-                            viewportComponents={viewportComponents}
-                            commandsManager={commandsManager}
-                          />
-                        </div>
-                      </ResizablePanel>
-                      <ResizableHandle
-                        onDragging={handleStudyQuestionPanelDragging}
-                        className={resizableHandleClassName}
-                      />
-                      <ResizablePanel
-                        order={1}
-                        id="viewerLayoutResizableStudyQuestionPanel"
-                        defaultSize={studyQuestionPanelSize}
-                        minSize={
-                          studyQuestionPanelCollapsed
-                            ? studyQuestionPanelCollapsedSize
-                            : studyQuestionPanelMinSize
-                        }
-                        maxSize={studyQuestionPanelMaxSize}
-                        collapsible
-                        collapsedSize={studyQuestionPanelCollapsedSize}
-                        onResize={handleStudyQuestionPanelResize}
-                        onCollapse={() => setStudyQuestionPanelCollapsed(true)}
-                        onExpand={() => setStudyQuestionPanelCollapsed(false)}
-                        ref={studyQuestionPanelApiRef}
-                      >
-                        {studyQuestionPanelCollapsed ? (
-                          <aside className="border-input bg-muted/30 flex h-full w-full flex-col items-center border-l pt-2">
-                            <button
-                              type="button"
-                              onClick={() => setStudyQuestionCollapsed(false)}
-                              aria-label="Open study question panel"
-                              title="Open study question panel"
-                              className="hover:bg-primary/10 focus:ring-primary-main text-primary flex h-8 w-8 items-center justify-center rounded transition focus:outline-none focus:ring-2"
-                            >
-                              <Icons.NavigationPanelReveal className="h-5 w-5" />
-                            </button>
-                          </aside>
-                        ) : (
-                          <StudyQuestionPanel
-                            servicesManager={servicesManager}
-                            onToggleCollapsed={() => setStudyQuestionCollapsed(true)}
-                          />
-                        )}
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  </div>
+                        <ResizablePanel
+                          order={0}
+                          id="viewerLayoutResizableStudyQuestionViewportPanel"
+                          minSize={studyQuestionViewportMinSize}
+                        >
+                          <div className="bg-background relative flex h-full min-h-0 min-w-0 items-center justify-center overflow-hidden">
+                            <ViewportGridComp
+                              servicesManager={servicesManager}
+                              viewportComponents={viewportComponents}
+                              commandsManager={commandsManager}
+                            />
+                          </div>
+                        </ResizablePanel>
+                        <ResizableHandle
+                          onDragging={handleStudyQuestionPanelDragging}
+                          className={resizableHandleClassName}
+                        />
+                        <ResizablePanel
+                          order={1}
+                          id="viewerLayoutResizableStudyQuestionPanel"
+                          defaultSize={studyQuestionPanelSize}
+                          minSize={
+                            studyQuestionPanelCollapsed
+                              ? studyQuestionPanelCollapsedSize
+                              : studyQuestionPanelMinSize
+                          }
+                          maxSize={studyQuestionPanelMaxSize}
+                          collapsible
+                          collapsedSize={studyQuestionPanelCollapsedSize}
+                          onResize={handleStudyQuestionPanelResize}
+                          onCollapse={() => setStudyQuestionPanelCollapsed(true)}
+                          onExpand={() => setStudyQuestionPanelCollapsed(false)}
+                          ref={studyQuestionPanelApiRef}
+                        >
+                          {studyQuestionPanelCollapsed ? (
+                            <aside className="border-input bg-muted/30 flex h-full w-full flex-col items-center border-l pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setStudyQuestionCollapsed(false)}
+                                aria-label="Open study question panel"
+                                title="Open study question panel"
+                                className="hover:bg-primary/10 focus:ring-primary-main text-primary flex h-8 w-8 items-center justify-center rounded transition focus:outline-none focus:ring-2"
+                              >
+                                <Icons.NavigationPanelReveal className="h-5 w-5" />
+                              </button>
+                            </aside>
+                          ) : (
+                            <StudyQuestionPanel
+                              servicesManager={servicesManager}
+                              onToggleCollapsed={() => setStudyQuestionCollapsed(true)}
+                            />
+                          )}
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    </div>
                   </GazeCalibrationGate>
                 )}
               </div>
