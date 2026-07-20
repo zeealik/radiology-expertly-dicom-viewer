@@ -11,7 +11,7 @@ import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import GazeCalibrationGate from './GazeCalibrationGate';
-import { getStudyInstanceUIDs, isEvaluationAdminAccess } from './studyParams';
+import { getStudyInstanceUIDs, isEvaluationAdminAccess, isEvaluationResultAccess } from './studyParams';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -66,10 +66,12 @@ function ViewerLayout({
 
   const {
     panelService,
+    displaySetService,
     hangingProtocolService,
     customizationService,
     cornerstoneViewportService,
     measurementService,
+    viewportGridService,
     uiNotificationService,
   } = servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
@@ -77,6 +79,8 @@ function ViewerLayout({
   const isStudyReview = searchParams.get('studyReview') === '1';
   const isStudyFeedback = searchParams.get('studyFeedback') === '1';
   const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
+  const isEvaluationResult = isEvaluationResultAccess(location.search);
+  const resultSeriesInstanceUID = searchParams.get('resultSeriesInstanceUID');
   const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
   const calibrationSessionId = `${location.key}:${[...studyInstanceUIDs].sort().join(',')}`;
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
@@ -173,6 +177,74 @@ function ViewerLayout({
       });
     }
   }, [commandsManager, measurementService, studyInstanceUIDs, uiNotificationService]);
+
+  useEffect(() => {
+    if (!isEvaluationResult || !resultSeriesInstanceUID || !displaySetService) {
+      return;
+    }
+
+    let hydrated = false;
+    const hydrateResultSeries = () => {
+      if (hydrated) {
+        return;
+      }
+
+      const resultDisplaySet = displaySetService
+        .getActiveDisplaySets()
+        ?.find(displaySet => displaySet?.SeriesInstanceUID === resultSeriesInstanceUID);
+
+      if (!resultDisplaySet?.displaySetInstanceUID) {
+        return;
+      }
+
+      try {
+        const result = commandsManager.runCommand('hydrateStructuredReport', {
+          displaySetInstanceUID: resultDisplaySet.displaySetInstanceUID,
+        });
+        hydrated = true;
+
+        const referencedSeriesUID = result?.SeriesInstanceUIDs?.[0];
+        const referencedDisplaySet = referencedSeriesUID
+          ? displaySetService.getDisplaySetsForSeries(referencedSeriesUID)?.[0]
+          : undefined;
+
+        if (referencedDisplaySet?.displaySetInstanceUID && viewportGridService) {
+          const viewportId = viewportGridService.getActiveViewportId();
+          commandsManager.runCommand('setDisplaySetsForViewports', {
+            viewportsToUpdate: [
+              {
+                viewportId,
+                displaySetInstanceUIDs: [referencedDisplaySet.displaySetInstanceUID],
+              },
+            ],
+          });
+        }
+      } catch (error) {
+        uiNotificationService?.show({
+          title: 'Result View',
+          message: error instanceof Error ? error.message : 'Unable to load result annotations.',
+          type: 'error',
+        });
+      }
+    };
+
+    hydrateResultSeries();
+    const subscription = displaySetService.subscribe?.(
+      displaySetService.EVENTS.DISPLAY_SETS_ADDED,
+      hydrateResultSeries
+    );
+
+    return () => {
+      subscription?.unsubscribe?.();
+    };
+  }, [
+    commandsManager,
+    displaySetService,
+    isEvaluationResult,
+    resultSeriesInstanceUID,
+    uiNotificationService,
+    viewportGridService,
+  ]);
 
   const setStudyQuestionCollapsed = useCallback(
     (collapsed: boolean) => {
@@ -490,22 +562,24 @@ function ViewerLayout({
                       />
                     )}
                   </div>
-                ) : isEvaluationAdmin ? (
+                ) : isEvaluationAdmin || isEvaluationResult ? (
                   <div
                     className="bg-background relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden"
                     onMouseEnter={handleMouseEnter}
                   >
-                    <div className="absolute right-4 top-4 z-10">
-                      <button
-                        type="button"
-                        onClick={saveEvaluationResult}
-                        className="bg-primary-main hover:bg-primary-light focus:ring-primary-light text-primary-foreground inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium shadow-lg transition focus:outline-none focus:ring-2"
-                        title="Save annotations as evaluation result"
-                      >
-                        <Icons.Add className="h-4 w-4" />
-                        <span>Save result</span>
-                      </button>
-                    </div>
+                    {isEvaluationAdmin && (
+                      <div className="absolute right-16 top-4 z-10">
+                        <button
+                          type="button"
+                          onClick={saveEvaluationResult}
+                          className="bg-primary-main hover:bg-primary-light focus:ring-primary-light text-primary-foreground inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium shadow-lg transition focus:outline-none focus:ring-2"
+                          title="Save annotations as evaluation result"
+                        >
+                          <Icons.Add className="h-4 w-4" />
+                          <span>Save result</span>
+                        </button>
+                      </div>
+                    )}
                     <ViewportGridComp
                       servicesManager={servicesManager}
                       viewportComponents={viewportComponents}

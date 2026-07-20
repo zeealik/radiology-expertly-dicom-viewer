@@ -75,6 +75,9 @@ export default function ModeRoute({
   const runTimeHangingProtocolId = lowerCaseSearchParams.get('hangingprotocolid');
   const runTimeStageId = lowerCaseSearchParams.get('stageid');
   const token = lowerCaseSearchParams.get('token');
+  const dicomAccessMode = lowerCaseSearchParams.get('dicomaccess');
+  const isEvaluationDicomAccess =
+    dicomAccessMode === 'evaluation-admin' || dicomAccessMode === 'evaluation-result';
 
   if (token) {
     updateAuthServiceAndCleanUrl(token, location, userAuthenticationService);
@@ -143,7 +146,12 @@ export default function ModeRoute({
    * Moved from PanelStudyBrowser.tsx to ensure validation runs in all modes
    */
   useEffect(() => {
-    if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length || !dataSource) {
+    if (
+      !ExtensionDependenciesLoaded ||
+      !studyInstanceUIDs?.length ||
+      !dataSource ||
+      isEvaluationDicomAccess
+    ) {
       return;
     }
 
@@ -168,7 +176,7 @@ export default function ModeRoute({
     };
 
     validateStudies();
-  }, [studyInstanceUIDs, ExtensionDependenciesLoaded, dataSource, navigate]);
+  }, [studyInstanceUIDs, ExtensionDependenciesLoaded, dataSource, navigate, isEvaluationDicomAccess]);
 
   useEffect(() => {
     if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length) {

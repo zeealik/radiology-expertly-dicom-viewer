@@ -28,3 +28,7 @@ export function getDicomAccessMode(search: string = window.location.search): str
 export function isEvaluationAdminAccess(search: string = window.location.search): boolean {
   return getDicomAccessMode(search) === 'evaluation-admin';
 }
+
+export function isEvaluationResultAccess(search: string = window.location.search): boolean {
+  return getDicomAccessMode(search) === 'evaluation-result';
+}
