@@ -10,7 +10,10 @@ import ViewportGrid from '@components/ViewportGrid';
 import Compose from './Compose';
 import loadModules from '../../pluginImports';
 import { defaultRouteInit } from './defaultRouteInit';
-import { updateAuthServiceAndCleanUrl } from './updateAuthServiceAndCleanUrl';
+import {
+  restoreStoredDicomAccessToken,
+  updateAuthServiceAndCleanUrl,
+} from './updateAuthServiceAndCleanUrl';
 
 const { getSplitParam } = utils;
 
@@ -75,6 +78,8 @@ export default function ModeRoute({
 
   if (token) {
     updateAuthServiceAndCleanUrl(token, location, userAuthenticationService);
+  } else {
+    restoreStoredDicomAccessToken(userAuthenticationService);
   }
 
   // An undefined dataSourceName implies that the active data source that is already set in the ExtensionManager should be used.

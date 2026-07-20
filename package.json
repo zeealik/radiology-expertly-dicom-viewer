@@ -42,6 +42,7 @@
     "dev:project": ".scripts/dev.sh",
     "dev:orthanc": "lerna run dev:orthanc --stream",
     "dev:orthanc:no:cache": "lerna run dev:orthanc:no:cache --stream",
+    "dev:evaluation": "cd platform/app && yarn run dev:evaluation",
     "dev:dcm4chee": "lerna run dev:dcm4chee --stream",
     "dev:static": "lerna run dev:static --stream",
     "orthanc:server": "docker run -d --name orthanc-ohif -p 4242:4242 -p 8042:8042 -e ORTHANC__AUTHENTICATION_ENABLED=false -e ORTHANC__REMOTE_ACCESS_ALLOWED=true -e ORTHANC__DICOM_WEB__ENABLE=true -e ORTHANC__DICOM_WEB__ROOT=/dicom-web/ orthancteam/orthanc",

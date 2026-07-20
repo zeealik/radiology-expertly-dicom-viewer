@@ -11,7 +11,7 @@ import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import GazeCalibrationGate from './GazeCalibrationGate';
-import { getStudyInstanceUIDs } from './studyParams';
+import { getStudyInstanceUIDs, isEvaluationAdminAccess } from './studyParams';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -64,12 +64,19 @@ function ViewerLayout({
   const [appConfig] = useAppConfig();
   const location = useLocation();
 
-  const { panelService, hangingProtocolService, customizationService, cornerstoneViewportService } =
-    servicesManager.services;
+  const {
+    panelService,
+    hangingProtocolService,
+    customizationService,
+    cornerstoneViewportService,
+    measurementService,
+    uiNotificationService,
+  } = servicesManager.services;
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(appConfig.showLoadingIndicator);
   const searchParams = new URLSearchParams(location.search);
   const isStudyReview = searchParams.get('studyReview') === '1';
   const isStudyFeedback = searchParams.get('studyFeedback') === '1';
+  const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
   const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
   const calibrationSessionId = `${location.key}:${[...studyInstanceUIDs].sort().join(',')}`;
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
@@ -128,6 +135,44 @@ function ViewerLayout({
       cornerstoneViewportService?.resize?.();
     });
   }, [cornerstoneViewportService]);
+
+  const saveEvaluationResult = useCallback(async () => {
+    const StudyInstanceUID = studyInstanceUIDs[0];
+    if (!StudyInstanceUID) {
+      uiNotificationService?.show({
+        title: 'Save Result',
+        message: 'No study is loaded.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const measurementFilter = measurement => measurement?.referenceStudyUID === StudyInstanceUID;
+    const measurements = measurementService?.getMeasurements?.(measurementFilter) || [];
+
+    if (!measurements.length) {
+      uiNotificationService?.show({
+        title: 'Save Result',
+        message: 'Add at least one annotation before saving.',
+        type: 'info',
+      });
+      return;
+    }
+
+    try {
+      await commandsManager.run('promptSaveReport', {
+        StudyInstanceUID,
+        measurementFilter,
+        defaultSaveTitle: 'Evaluation Result',
+      });
+    } catch (error) {
+      uiNotificationService?.show({
+        title: 'Save Result',
+        message: error instanceof Error ? error.message : 'Unable to save annotations.',
+        type: 'error',
+      });
+    }
+  }, [commandsManager, measurementService, studyInstanceUIDs, uiNotificationService]);
 
   const setStudyQuestionCollapsed = useCallback(
     (collapsed: boolean) => {
@@ -444,6 +489,28 @@ function ViewerLayout({
                         onToggleCollapsed={() => setStudyQuestionCollapsed(true)}
                       />
                     )}
+                  </div>
+                ) : isEvaluationAdmin ? (
+                  <div
+                    className="bg-background relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden"
+                    onMouseEnter={handleMouseEnter}
+                  >
+                    <div className="absolute right-4 top-4 z-10">
+                      <button
+                        type="button"
+                        onClick={saveEvaluationResult}
+                        className="bg-primary-main hover:bg-primary-light focus:ring-primary-light text-primary-foreground inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium shadow-lg transition focus:outline-none focus:ring-2"
+                        title="Save annotations as evaluation result"
+                      >
+                        <Icons.Add className="h-4 w-4" />
+                        <span>Save result</span>
+                      </button>
+                    </div>
+                    <ViewportGridComp
+                      servicesManager={servicesManager}
+                      viewportComponents={viewportComponents}
+                      commandsManager={commandsManager}
+                    />
                   </div>
                 ) : (
                   <GazeCalibrationGate

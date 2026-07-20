@@ -16,3 +16,15 @@ export function getStudyInstanceUIDs(search: string = window.location.search): s
 
   return [];
 }
+
+export function getDicomAccessMode(search: string = window.location.search): string | null {
+  try {
+    return new URLSearchParams(search).get('dicomAccess');
+  } catch {
+    return null;
+  }
+}
+
+export function isEvaluationAdminAccess(search: string = window.location.search): boolean {
+  return getDicomAccessMode(search) === 'evaluation-admin';
+}

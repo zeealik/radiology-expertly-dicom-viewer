@@ -1,3 +1,34 @@
+const DICOM_ACCESS_TOKEN_STORAGE_KEY = 'ohif.dicomAccessToken';
+
+function setAuthorizationToken(token: string, userAuthenticationService: any): void {
+  if (!token) {
+    return;
+  }
+
+  // if a token is passed in, set the userAuthenticationService to use it
+  // for the Authorization header for all requests
+  userAuthenticationService.setServiceImplementation({
+    getAuthorizationHeader: () => ({
+      Authorization: 'Bearer ' + token,
+    }),
+  });
+}
+
+export function getStoredDicomAccessToken(): string | null {
+  try {
+    return window.sessionStorage.getItem(DICOM_ACCESS_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function restoreStoredDicomAccessToken(userAuthenticationService: any): void {
+  const token = getStoredDicomAccessToken();
+  if (token) {
+    setAuthorizationToken(token, userAuthenticationService);
+  }
+}
+
 /**
  * Updates the user authentication service with the provided token and cleans the token from the URL.
  * @param token - The token to set in the user authentication service.
@@ -13,13 +44,13 @@ export function updateAuthServiceAndCleanUrl(
     return;
   }
 
-  // if a token is passed in, set the userAuthenticationService to use it
-  // for the Authorization header for all requests
-  userAuthenticationService.setServiceImplementation({
-    getAuthorizationHeader: () => ({
-      Authorization: 'Bearer ' + token,
-    }),
-  });
+  try {
+    window.sessionStorage.setItem(DICOM_ACCESS_TOKEN_STORAGE_KEY, token);
+  } catch {
+    // The in-memory auth service still works when sessionStorage is unavailable.
+  }
+
+  setAuthorizationToken(token, userAuthenticationService);
 
   // Create a URL object with the current location
   const urlObj = new URL(window.location.origin + window.location.pathname + location.search);

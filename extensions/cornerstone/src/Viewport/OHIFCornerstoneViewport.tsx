@@ -21,6 +21,7 @@ import ActiveViewportBehavior from '../utils/ActiveViewportBehavior';
 import { WITH_NAVIGATION } from '../services/ViewportService/CornerstoneViewportService';
 import { registerGazeViewport, unregisterGazeViewport } from '../utils/gazeCaptureBridge';
 import { useGazeCalibrationStatus } from '../utils/useGazeCalibrationStatus';
+import { isEvaluationAdminAccess } from '@ohif/extension-default/src/ViewerLayout/studyParams';
 import { useHeadTrackingStatus } from '@ohif/extension-default/src/ViewerLayout/useHeadTrackingStatus';
 
 function getStudyInstanceUIDsFromSearch(search: string): string[] {
@@ -83,6 +84,7 @@ const OHIFCornerstoneViewport = React.memo(
     const routeSearchParams = new URLSearchParams(location.search);
     const isStudyReview = routeSearchParams.get('studyReview') === '1';
     const isStudyFeedback = routeSearchParams.get('studyFeedback') === '1';
+    const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
     const studyInstanceUIDs = getStudyInstanceUIDsFromSearch(location.search);
     const isCalibrated = useGazeCalibrationStatus(studyInstanceUIDs);
     const head = useHeadTrackingStatus();
@@ -90,7 +92,7 @@ const OHIFCornerstoneViewport = React.memo(
     // it only pauses capture when the user is genuinely out of position.
     const headOk = head.inSafeZone;
     const shouldCaptureGaze =
-      !isStudyReview && !isStudyFeedback && isCalibrated && headOk;
+      !isEvaluationAdmin && !isStudyReview && !isStudyFeedback && isCalibrated && headOk;
 
     if (!viewportId) {
       throw new Error('Viewport ID is required');
