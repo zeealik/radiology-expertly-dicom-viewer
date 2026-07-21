@@ -23,6 +23,7 @@ import { registerGazeViewport, unregisterGazeViewport } from '../utils/gazeCaptu
 import { useGazeCalibrationStatus } from '../utils/useGazeCalibrationStatus';
 import {
   isEvaluationAdminAccess,
+  isEvaluationAttemptAccess,
   isEvaluationResultAccess,
 } from '@ohif/extension-default/src/ViewerLayout/studyParams';
 import { useHeadTrackingStatus } from '@ohif/extension-default/src/ViewerLayout/useHeadTrackingStatus';
@@ -88,6 +89,7 @@ const OHIFCornerstoneViewport = React.memo(
     const isStudyReview = routeSearchParams.get('studyReview') === '1';
     const isStudyFeedback = routeSearchParams.get('studyFeedback') === '1';
     const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
+    const isEvaluationAttempt = isEvaluationAttemptAccess(location.search);
     const isEvaluationResult = isEvaluationResultAccess(location.search);
     const studyInstanceUIDs = getStudyInstanceUIDsFromSearch(location.search);
     const isCalibrated = useGazeCalibrationStatus(studyInstanceUIDs);
@@ -97,6 +99,7 @@ const OHIFCornerstoneViewport = React.memo(
     const headOk = head.inSafeZone;
     const shouldCaptureGaze =
       !isEvaluationAdmin &&
+      !isEvaluationAttempt &&
       !isEvaluationResult &&
       !isStudyReview &&
       !isStudyFeedback &&

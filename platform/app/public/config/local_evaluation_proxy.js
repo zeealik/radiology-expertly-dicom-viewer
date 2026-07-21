@@ -9,6 +9,7 @@ window.config = {
   showWarningMessageForCrossOrigin: true,
   showCPUFallbackMessage: true,
   strictZSpacingForVolumeViewport: true,
+  evaluationDicomWebRoot: 'http://localhost:8081/dicom-web',
   defaultDataSourceName: 'evaluationOrthancProxy',
   dataSources: [
     {

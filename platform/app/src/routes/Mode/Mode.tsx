@@ -77,7 +77,9 @@ export default function ModeRoute({
   const token = lowerCaseSearchParams.get('token');
   const dicomAccessMode = lowerCaseSearchParams.get('dicomaccess');
   const isEvaluationDicomAccess =
-    dicomAccessMode === 'evaluation-admin' || dicomAccessMode === 'evaluation-result';
+    dicomAccessMode === 'evaluation-admin' ||
+    dicomAccessMode === 'evaluation-attempt' ||
+    dicomAccessMode === 'evaluation-result';
 
   if (token) {
     updateAuthServiceAndCleanUrl(token, location, userAuthenticationService);

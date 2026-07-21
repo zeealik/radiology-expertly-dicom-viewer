@@ -101,6 +101,18 @@ const toUpdateSpec = (obj: object) =>
     : { $merge: (obj ?? {}) as object };
 
 const unsubscriptions = [];
+const isEvaluationDicomAccess = () => {
+  try {
+    const mode = new URLSearchParams(window.location.search).get('dicomAccess');
+    return (
+      mode === 'evaluation-admin' ||
+      mode === 'evaluation-attempt' ||
+      mode === 'evaluation-result'
+    );
+  } catch {
+    return false;
+  }
+};
 /**
  *
  */
@@ -112,8 +124,10 @@ const cornerstoneExtension: Types.Extensions.Extension = {
 
   onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
     installGazeCaptureBridge();
-    installEyeGesturesBrowserClient();
-    installHeadTracking();
+    if (!isEvaluationDicomAccess()) {
+      installEyeGesturesBrowserClient();
+      installHeadTracking();
+    }
 
     const { cornerstoneViewportService, toolbarService, segmentationService } =
       servicesManager.services;

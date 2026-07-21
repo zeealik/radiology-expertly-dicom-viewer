@@ -11,7 +11,12 @@ import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import GazeCalibrationGate from './GazeCalibrationGate';
-import { getStudyInstanceUIDs, isEvaluationAdminAccess, isEvaluationResultAccess } from './studyParams';
+import {
+  getStudyInstanceUIDs,
+  isEvaluationAdminAccess,
+  isEvaluationAttemptAccess,
+  isEvaluationResultAccess,
+} from './studyParams';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
 
@@ -26,6 +31,29 @@ const mobileViewportMediaQuery = '(max-width: 767px)';
 
 const isMobileViewport = () =>
   typeof window !== 'undefined' && window.matchMedia(mobileViewportMediaQuery).matches;
+
+const getRequestFailureMessage = (error: unknown, fallback: string): string => {
+  const requestError = error as {
+    message?: string;
+    status?: number;
+    response?: unknown;
+    request?: { status?: number; response?: unknown; responseText?: string };
+  };
+  const status = requestError.status || requestError.request?.status;
+  const response = requestError.response ?? requestError.request?.response ?? requestError.request?.responseText;
+
+  if (status) {
+    const detail =
+      typeof response === 'string'
+        ? response
+        : response
+          ? JSON.stringify(response)
+          : requestError.message;
+    return `Request failed (${status})${detail ? `: ${detail}` : ''}`;
+  }
+
+  return requestError.message || fallback;
+};
 
 const getStoredStudyQuestionPanelWidth = () => {
   try {
@@ -79,6 +107,7 @@ function ViewerLayout({
   const isStudyReview = searchParams.get('studyReview') === '1';
   const isStudyFeedback = searchParams.get('studyFeedback') === '1';
   const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
+  const isEvaluationAttempt = isEvaluationAttemptAccess(location.search);
   const isEvaluationResult = isEvaluationResultAccess(location.search);
   const resultSeriesInstanceUID = searchParams.get('resultSeriesInstanceUID');
   const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
@@ -172,7 +201,7 @@ function ViewerLayout({
     } catch (error) {
       uiNotificationService?.show({
         title: 'Save Result',
-        message: error instanceof Error ? error.message : 'Unable to save annotations.',
+        message: getRequestFailureMessage(error, 'Unable to save annotations.'),
         type: 'error',
       });
     }
@@ -184,24 +213,74 @@ function ViewerLayout({
     }
 
     let hydrated = false;
-    const hydrateResultSeries = () => {
+    let loadingResultDisplaySet = false;
+    let retryHandle: ReturnType<typeof window.setTimeout> | undefined;
+    let attempts = 0;
+    const scheduleHydrationRetry = () => {
+      if (attempts < 20) {
+        retryHandle = window.setTimeout(hydrateResultSeries, 250);
+      }
+    };
+    const hydrateResultSeries = async () => {
       if (hydrated) {
         return;
       }
+      attempts += 1;
 
       const resultDisplaySet = displaySetService
         .getActiveDisplaySets()
         ?.find(displaySet => displaySet?.SeriesInstanceUID === resultSeriesInstanceUID);
 
       if (!resultDisplaySet?.displaySetInstanceUID) {
+        scheduleHydrationRetry();
+        return;
+      }
+
+      if (!resultDisplaySet.isLoaded && typeof resultDisplaySet.load === 'function') {
+        if (loadingResultDisplaySet) {
+          scheduleHydrationRetry();
+          return;
+        }
+
+        loadingResultDisplaySet = true;
+        try {
+          await resultDisplaySet.load();
+        } catch (error) {
+          loadingResultDisplaySet = false;
+          if (attempts < 20) {
+            scheduleHydrationRetry();
+          } else {
+            uiNotificationService?.show({
+              title: 'Result View',
+              message:
+                error instanceof Error ? error.message : 'Unable to load result annotations.',
+              type: 'error',
+            });
+          }
+          return;
+        }
+        loadingResultDisplaySet = false;
+      }
+
+      if (!Array.isArray(resultDisplaySet.measurements)) {
+        scheduleHydrationRetry();
         return;
       }
 
       try {
+        const viewportGridState = viewportGridService?.getState?.();
+        const viewportId =
+          viewportGridService?.getActiveViewportId?.() ||
+          (viewportGridState?.viewports ? Array.from(viewportGridState.viewports.keys())[0] : undefined);
+
+        if (!viewportId) {
+          scheduleHydrationRetry();
+          return;
+        }
+
         const result = commandsManager.runCommand('hydrateStructuredReport', {
           displaySetInstanceUID: resultDisplaySet.displaySetInstanceUID,
         });
-        hydrated = true;
 
         const referencedSeriesUID = result?.SeriesInstanceUIDs?.[0];
         const referencedDisplaySet = referencedSeriesUID
@@ -209,7 +288,6 @@ function ViewerLayout({
           : undefined;
 
         if (referencedDisplaySet?.displaySetInstanceUID && viewportGridService) {
-          const viewportId = viewportGridService.getActiveViewportId();
           commandsManager.runCommand('setDisplaySetsForViewports', {
             viewportsToUpdate: [
               {
@@ -219,12 +297,17 @@ function ViewerLayout({
             ],
           });
         }
+        hydrated = true;
       } catch (error) {
-        uiNotificationService?.show({
-          title: 'Result View',
-          message: error instanceof Error ? error.message : 'Unable to load result annotations.',
-          type: 'error',
-        });
+        if (attempts < 20) {
+          scheduleHydrationRetry();
+        } else {
+          uiNotificationService?.show({
+            title: 'Result View',
+            message: error instanceof Error ? error.message : 'Unable to load result annotations.',
+            type: 'error',
+          });
+        }
       }
     };
 
@@ -235,6 +318,9 @@ function ViewerLayout({
     );
 
     return () => {
+      if (retryHandle) {
+        window.clearTimeout(retryHandle);
+      }
       subscription?.unsubscribe?.();
     };
   }, [
@@ -562,7 +648,7 @@ function ViewerLayout({
                       />
                     )}
                   </div>
-                ) : isEvaluationAdmin || isEvaluationResult ? (
+                ) : isEvaluationAdmin || isEvaluationAttempt || isEvaluationResult ? (
                   <div
                     className="bg-background relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden"
                     onMouseEnter={handleMouseEnter}

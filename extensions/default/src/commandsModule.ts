@@ -823,10 +823,10 @@ const commandsModule = ({
             instance.wadoRoot = config.wadoRoot;
           });
         }
-        DicomMetadataStore.addInstances(instances, true);
         for (const instance of instances) {
           await resolvedDataSource.store.dicom(instance, null, dicomDict);
         }
+        DicomMetadataStore.addInstances(instances, true);
         const studyUIDs = new Set(instances.map(i => i.StudyInstanceUID).filter(Boolean));
         for (const uid of studyUIDs) {
           resolvedDataSource.deleteStudyMetadataPromise(uid);

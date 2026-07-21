@@ -29,6 +29,10 @@ export function isEvaluationAdminAccess(search: string = window.location.search)
   return getDicomAccessMode(search) === 'evaluation-admin';
 }
 
+export function isEvaluationAttemptAccess(search: string = window.location.search): boolean {
+  return getDicomAccessMode(search) === 'evaluation-attempt';
+}
+
 export function isEvaluationResultAccess(search: string = window.location.search): boolean {
   return getDicomAccessMode(search) === 'evaluation-result';
 }

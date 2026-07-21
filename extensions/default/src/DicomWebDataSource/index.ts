@@ -28,6 +28,26 @@ const EXPLICIT_VR_LITTLE_ENDIAN = '1.2.840.10008.1.2.1';
 
 const metadataProvider = classes.MetadataProvider;
 
+const evaluationAccessModes = new Set([
+  'evaluation-admin',
+  'evaluation-attempt',
+  'evaluation-result',
+]);
+
+const getEvaluationDicomWebRoot = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const dicomAccessMode = searchParams.get('dicomAccess');
+  if (!evaluationAccessModes.has(dicomAccessMode)) {
+    return;
+  }
+
+  return window.config?.evaluationDicomWebRoot || 'http://localhost:8081/dicom-web';
+};
+
 export type DicomWebConfig = {
   /** Data source name */
   name: string;
@@ -138,6 +158,22 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
           params,
           query,
         });
+      }
+
+      const evaluationDicomWebRoot = getEvaluationDicomWebRoot();
+      if (evaluationDicomWebRoot) {
+        dicomWebConfig = {
+          ...dicomWebConfig,
+          qidoRoot: evaluationDicomWebRoot,
+          wadoRoot: evaluationDicomWebRoot,
+          wadoUri: evaluationDicomWebRoot,
+          qidoSupportsIncludeField: true,
+          supportsFuzzyMatching: false,
+          supportsWildcard: false,
+          supportsReject: false,
+          dicomUploadEnabled: true,
+          staticWado: false,
+        };
       }
 
       dicomWebConfigCopy = JSON.parse(JSON.stringify(dicomWebConfig));
@@ -424,6 +460,7 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
           const options = {
             datasets: [part10Buffer],
             request,
+            ...(dataset.StudyInstanceUID ? { studyInstanceUID: dataset.StudyInstanceUID } : {}),
           };
 
           await wadoDicomWebClient.storeInstances(options);
