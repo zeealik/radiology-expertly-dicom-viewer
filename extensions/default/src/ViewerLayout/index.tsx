@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useLocation } from 'react-router-dom';
+import { Enums } from '@cornerstonejs/core';
 
 import { Icons, InvestigationalUseDialog } from '@ohif/ui-next';
 import { HangingProtocolService, CommandsManager } from '@ohif/core';
@@ -109,7 +110,17 @@ function ViewerLayout({
   const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
   const isEvaluationAttempt = isEvaluationAttemptAccess(location.search);
   const isEvaluationResult = isEvaluationResultAccess(location.search);
-  const resultSeriesInstanceUID = searchParams.get('resultSeriesInstanceUID');
+  const shouldEmitEvaluationContext = isEvaluationAttempt || isEvaluationResult;
+  const resultSeriesInstanceUIDs = useMemo(
+    () =>
+      [
+        ...searchParams.getAll('resultSeriesInstanceUIDs'),
+        ...(searchParams.get('resultSeriesInstanceUID')
+          ? [searchParams.get('resultSeriesInstanceUID')]
+          : []),
+      ].filter((value): value is string => typeof value === 'string' && value.length > 0),
+    [location.search]
+  );
   const studyInstanceUIDs = getStudyInstanceUIDs(location.search);
   const calibrationSessionId = `${location.key}:${[...studyInstanceUIDs].sort().join(',')}`;
   const studyQuestionPanelGroupRef = useRef<HTMLDivElement | null>(null);
@@ -207,12 +218,134 @@ function ViewerLayout({
     }
   }, [commandsManager, measurementService, studyInstanceUIDs, uiNotificationService]);
 
-  useEffect(() => {
-    if (!isEvaluationResult || !resultSeriesInstanceUID || !displaySetService) {
+  const emitEvaluationDicomContext = useCallback(() => {
+    if (!shouldEmitEvaluationContext || !viewportGridService || !displaySetService) {
       return;
     }
 
-    let hydrated = false;
+    const viewportGridState = viewportGridService.getState?.();
+    const activeViewportId =
+      viewportGridService.getActiveViewportId?.() || viewportGridState?.activeViewportId;
+    const activeViewport = activeViewportId
+      ? viewportGridState?.viewports?.get?.(activeViewportId)
+      : undefined;
+    const displaySetInstanceUID = activeViewport?.displaySetInstanceUIDs?.[0];
+    const displaySet = displaySetInstanceUID
+      ? displaySetService.getDisplaySetByUID?.(displaySetInstanceUID)
+      : undefined;
+    const cornerstoneViewport = activeViewportId
+      ? cornerstoneViewportService?.getCornerstoneViewport?.(activeViewportId)
+      : undefined;
+    const imageIndex = cornerstoneViewport?.getCurrentImageIdIndex?.();
+    const instances = displaySet?.instances || displaySet?.images || [];
+    const instance =
+      typeof imageIndex === 'number'
+        ? instances?.[imageIndex]
+        : instances?.[0] || displaySet?.instance;
+
+    window.parent?.postMessage(
+      {
+        type: 'radiology-expertly:evaluation-dicom-context',
+        payload: {
+          viewportId: activeViewportId || null,
+          displaySetInstanceUID: displaySetInstanceUID || null,
+          studyInstanceUID:
+            instance?.StudyInstanceUID ||
+            displaySet?.StudyInstanceUID ||
+            studyInstanceUIDs[0] ||
+            null,
+          seriesInstanceUID:
+            instance?.SeriesInstanceUID || displaySet?.SeriesInstanceUID || null,
+          sopInstanceUID:
+            instance?.SOPInstanceUID ||
+            instance?.metadata?.SOPInstanceUID ||
+            displaySet?.SOPInstanceUID ||
+            null,
+          frameIndex: typeof imageIndex === 'number' ? imageIndex : null,
+          sliceIndex: typeof imageIndex === 'number' ? imageIndex : null,
+        },
+      },
+      '*'
+    );
+  }, [
+    cornerstoneViewportService,
+    displaySetService,
+    shouldEmitEvaluationContext,
+    studyInstanceUIDs,
+    viewportGridService,
+  ]);
+
+  useEffect(() => {
+    if (!shouldEmitEvaluationContext || !viewportGridService) {
+      return;
+    }
+
+    let removeViewportListeners: (() => void) | undefined;
+    let retryHandle: ReturnType<typeof window.setTimeout> | undefined;
+
+    const attachViewportListeners = () => {
+      const viewportGridState = viewportGridService.getState?.();
+      const activeViewportId =
+        viewportGridService.getActiveViewportId?.() || viewportGridState?.activeViewportId;
+      const viewport = activeViewportId
+        ? cornerstoneViewportService?.getCornerstoneViewport?.(activeViewportId)
+        : undefined;
+      const element = viewport?.element;
+
+      removeViewportListeners?.();
+      emitEvaluationDicomContext();
+
+      if (!element) {
+        retryHandle = window.setTimeout(attachViewportListeners, 250);
+        return;
+      }
+
+      const emit = () => emitEvaluationDicomContext();
+      element.addEventListener(Enums.Events.STACK_NEW_IMAGE, emit);
+      element.addEventListener(Enums.Events.VOLUME_NEW_IMAGE, emit);
+      element.addEventListener(Enums.Events.IMAGE_RENDERED, emit);
+      removeViewportListeners = () => {
+        element.removeEventListener(Enums.Events.STACK_NEW_IMAGE, emit);
+        element.removeEventListener(Enums.Events.VOLUME_NEW_IMAGE, emit);
+        element.removeEventListener(Enums.Events.IMAGE_RENDERED, emit);
+      };
+    };
+
+    attachViewportListeners();
+    const activeViewportSubscription = viewportGridService.subscribe?.(
+      viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED,
+      attachViewportListeners
+    );
+    const viewportDataSubscription =
+      cornerstoneViewportService?.EVENTS?.VIEWPORT_DATA_CHANGED &&
+      cornerstoneViewportService.subscribe
+        ? cornerstoneViewportService.subscribe(
+            cornerstoneViewportService.EVENTS.VIEWPORT_DATA_CHANGED,
+            attachViewportListeners
+          )
+        : undefined;
+
+    return () => {
+      if (retryHandle) {
+        window.clearTimeout(retryHandle);
+      }
+      activeViewportSubscription?.unsubscribe?.();
+      viewportDataSubscription?.unsubscribe?.();
+      removeViewportListeners?.();
+    };
+  }, [
+    cornerstoneViewportService,
+    emitEvaluationDicomContext,
+    shouldEmitEvaluationContext,
+    viewportGridService,
+  ]);
+
+  useEffect(() => {
+    if (!isEvaluationResult || resultSeriesInstanceUIDs.length === 0 || !displaySetService) {
+      return;
+    }
+
+    const hydratedSeriesInstanceUIDs = new Set<string>();
     let loadingResultDisplaySet = false;
     let retryHandle: ReturnType<typeof window.setTimeout> | undefined;
     let attempts = 0;
@@ -222,14 +355,17 @@ function ViewerLayout({
       }
     };
     const hydrateResultSeries = async () => {
-      if (hydrated) {
+      if (hydratedSeriesInstanceUIDs.size === resultSeriesInstanceUIDs.length) {
         return;
       }
       attempts += 1;
 
+      const pendingSeriesInstanceUID = resultSeriesInstanceUIDs.find(
+        seriesInstanceUID => !hydratedSeriesInstanceUIDs.has(seriesInstanceUID)
+      );
       const resultDisplaySet = displaySetService
         .getActiveDisplaySets()
-        ?.find(displaySet => displaySet?.SeriesInstanceUID === resultSeriesInstanceUID);
+        ?.find(displaySet => displaySet?.SeriesInstanceUID === pendingSeriesInstanceUID);
 
       if (!resultDisplaySet?.displaySetInstanceUID) {
         scheduleHydrationRetry();
@@ -297,7 +433,12 @@ function ViewerLayout({
             ],
           });
         }
-        hydrated = true;
+        if (pendingSeriesInstanceUID) {
+          hydratedSeriesInstanceUIDs.add(pendingSeriesInstanceUID);
+        }
+        if (hydratedSeriesInstanceUIDs.size < resultSeriesInstanceUIDs.length) {
+          scheduleHydrationRetry();
+        }
       } catch (error) {
         if (attempts < 20) {
           scheduleHydrationRetry();
@@ -327,7 +468,7 @@ function ViewerLayout({
     commandsManager,
     displaySetService,
     isEvaluationResult,
-    resultSeriesInstanceUID,
+    resultSeriesInstanceUIDs,
     uiNotificationService,
     viewportGridService,
   ]);
