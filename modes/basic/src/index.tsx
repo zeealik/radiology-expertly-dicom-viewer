@@ -237,9 +237,9 @@ export const toolbarSections = {
   [TOOLBAR_SECTIONS.viewportActionMenu.bottomLeft]: ['windowLevelMenu'],
 
   MeasurementTools: [
+    'ArrowAnnotate',
     'Length',
     'Bidirectional',
-    'ArrowAnnotate',
     'EllipticalROI',
     'RectangleROI',
     'CircleROI',
@@ -249,9 +249,9 @@ export const toolbarSections = {
   ],
 
   MoreTools: [
+    'ArrowAnnotate',
     'Length',
     'Bidirectional',
-    'ArrowAnnotate',
     'EllipticalROI',
     'RectangleROI',
     'CircleROI',

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Icons } from '@ohif/ui-next';
 import { useSystem } from '@ohif/core';
 import { useTranslation } from 'react-i18next';
+import { isReadOnlyViewerAccess } from '@ohif/extension-default/src/ViewerLayout/studyParams';
 
 export function StudyMeasurementsActions({ items, StudyInstanceUID, measurementFilter, actions }) {
   const { commandsManager } = useSystem();
@@ -9,6 +10,13 @@ export function StudyMeasurementsActions({ items, StudyInstanceUID, measurementF
   const disabled = !items?.length;
 
   if (disabled) {
+    return null;
+  }
+
+  // A read-only viewer (e.g. the pilot study result view) is strictly view-only:
+  // CSV export, Create SR and Delete all mutate or extract the linked findings, so
+  // the whole action bar is hidden rather than individually disabled.
+  if (isReadOnlyViewerAccess()) {
     return null;
   }
 

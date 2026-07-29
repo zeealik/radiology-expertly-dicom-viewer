@@ -5,6 +5,7 @@ import { Enums } from '@cornerstonejs/core';
 
 import { Icons, InvestigationalUseDialog } from '@ohif/ui-next';
 import { HangingProtocolService, CommandsManager } from '@ohif/core';
+import { PanelMeasurement } from '@ohif/extension-cornerstone';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
@@ -14,9 +15,11 @@ import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel'
 import GazeCalibrationGate from './GazeCalibrationGate';
 import {
   getStudyInstanceUIDs,
+  isAnnotationTool,
   isEvaluationAdminAccess,
   isEvaluationAttemptAccess,
   isEvaluationResultAccess,
+  isReadOnlyViewerAccess,
 } from './studyParams';
 import { Onboarding, ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@ohif/ui-next';
 import useResizablePanels from './ResizablePanelsHook';
@@ -100,6 +103,7 @@ function ViewerLayout({
     customizationService,
     cornerstoneViewportService,
     measurementService,
+    toolGroupService,
     viewportGridService,
     uiNotificationService,
   } = servicesManager.services;
@@ -110,7 +114,9 @@ function ViewerLayout({
   const isEvaluationAdmin = isEvaluationAdminAccess(location.search);
   const isEvaluationAttempt = isEvaluationAttemptAccess(location.search);
   const isEvaluationResult = isEvaluationResultAccess(location.search);
-  const shouldEmitEvaluationContext = isEvaluationAttempt || isEvaluationResult;
+  const isReadOnlyViewer = isReadOnlyViewerAccess(location.search);
+  const isEvaluationViewer = isEvaluationAdmin || isEvaluationAttempt || isEvaluationResult;
+  const shouldEmitEvaluationContext = isEvaluationViewer;
   const resultSeriesInstanceUIDs = useMemo(
     () =>
       [
@@ -184,7 +190,7 @@ function ViewerLayout({
     const StudyInstanceUID = studyInstanceUIDs[0];
     if (!StudyInstanceUID) {
       uiNotificationService?.show({
-        title: 'Save Result',
+        title: 'Save Finding',
         message: 'No study is loaded.',
         type: 'error',
       });
@@ -196,7 +202,7 @@ function ViewerLayout({
 
     if (!measurements.length) {
       uiNotificationService?.show({
-        title: 'Save Result',
+        title: 'Save Finding',
         message: 'Add at least one annotation before saving.',
         type: 'info',
       });
@@ -207,16 +213,69 @@ function ViewerLayout({
       await commandsManager.run('promptSaveReport', {
         StudyInstanceUID,
         measurementFilter,
-        defaultSaveTitle: 'Evaluation Result',
+        defaultSaveTitle: 'Evaluation Finding',
       });
     } catch (error) {
       uiNotificationService?.show({
-        title: 'Save Result',
+        title: 'Save Finding',
         message: getRequestFailureMessage(error, 'Unable to save annotations.'),
         type: 'error',
       });
     }
   }, [commandsManager, measurementService, studyInstanceUIDs, uiNotificationService]);
+
+  useEffect(() => {
+    if (!isReadOnlyViewer || !toolGroupService) {
+      return;
+    }
+
+    const disableWritableTools = () => {
+      toolGroupService.getToolGroupIds?.().forEach(toolGroupId => {
+        const toolGroup = toolGroupService.getToolGroup?.(toolGroupId);
+        const toolInstances = toolGroup?.toolOptions ? Object.keys(toolGroup.toolOptions) : [];
+
+        toolInstances.forEach(toolName => {
+          const isNavigationTool =
+            /Pan|Zoom|WindowLevel|StackScroll|Trackball|Rotate|ReferenceLines|Crosshairs/i.test(
+              toolName
+            );
+
+          if (isNavigationTool || !toolGroup?.hasTool?.(toolName)) {
+            return;
+          }
+
+          // Annotation tools must stay in `Enabled` mode rather than `Disabled`: Cornerstone3D's
+          // AnnotationRenderingEngine only draws annotations for tools in Active/Passive/Enabled
+          // mode, so disabling them would hide the hydrated findings entirely. `Enabled` renders
+          // them while keeping them non-interactive (no creation, no drag handles).
+          if (isAnnotationTool(toolName)) {
+            toolGroup.setToolEnabled(toolName);
+            return;
+          }
+
+          toolGroup.setToolDisabled(toolName);
+        });
+      });
+    };
+
+    disableWritableTools();
+
+    const subscriptions = [
+      toolGroupService.EVENTS?.TOOLGROUP_CREATED
+        ? toolGroupService.subscribe?.(toolGroupService.EVENTS.TOOLGROUP_CREATED, disableWritableTools)
+        : undefined,
+      toolGroupService.EVENTS?.VIEWPORT_ADDED
+        ? toolGroupService.subscribe?.(toolGroupService.EVENTS.VIEWPORT_ADDED, disableWritableTools)
+        : undefined,
+      viewportGridService?.EVENTS?.VIEWPORTS_READY
+        ? viewportGridService.subscribe?.(viewportGridService.EVENTS.VIEWPORTS_READY, disableWritableTools)
+        : undefined,
+    ];
+
+    return () => {
+      subscriptions.forEach(subscription => subscription?.unsubscribe?.());
+    };
+  }, [isReadOnlyViewer, toolGroupService, viewportGridService]);
 
   const emitEvaluationDicomContext = useCallback(() => {
     if (!shouldEmitEvaluationContext || !viewportGridService || !displaySetService) {
@@ -341,7 +400,7 @@ function ViewerLayout({
   ]);
 
   useEffect(() => {
-    if (!isEvaluationResult || resultSeriesInstanceUIDs.length === 0 || !displaySetService) {
+    if (!(isEvaluationResult || isEvaluationAdmin) || !displaySetService) {
       return;
     }
 
@@ -349,23 +408,39 @@ function ViewerLayout({
     let loadingResultDisplaySet = false;
     let retryHandle: ReturnType<typeof window.setTimeout> | undefined;
     let attempts = 0;
+    const maxAttempts = 80;
     const scheduleHydrationRetry = () => {
-      if (attempts < 20) {
+      if (attempts < maxAttempts) {
         retryHandle = window.setTimeout(hydrateResultSeries, 250);
       }
     };
     const hydrateResultSeries = async () => {
-      if (hydratedSeriesInstanceUIDs.size === resultSeriesInstanceUIDs.length) {
+      const activeDisplaySets = displaySetService.getActiveDisplaySets?.() || [];
+      const seriesInstanceUIDs =
+        resultSeriesInstanceUIDs.length > 0
+          ? resultSeriesInstanceUIDs
+          : activeDisplaySets
+              .filter(displaySet => displaySet?.Modality === 'SR' || displaySet?.modality === 'SR')
+              .map(displaySet => displaySet.SeriesInstanceUID)
+              .filter(Boolean);
+
+      if (!seriesInstanceUIDs.length) {
+        attempts += 1;
+        scheduleHydrationRetry();
+        return;
+      }
+
+      if (hydratedSeriesInstanceUIDs.size === seriesInstanceUIDs.length) {
         return;
       }
       attempts += 1;
 
-      const pendingSeriesInstanceUID = resultSeriesInstanceUIDs.find(
+      const pendingSeriesInstanceUID = seriesInstanceUIDs.find(
         seriesInstanceUID => !hydratedSeriesInstanceUIDs.has(seriesInstanceUID)
       );
-      const resultDisplaySet = displaySetService
-        .getActiveDisplaySets()
-        ?.find(displaySet => displaySet?.SeriesInstanceUID === pendingSeriesInstanceUID);
+      const resultDisplaySet = activeDisplaySets.find(
+        displaySet => displaySet?.SeriesInstanceUID === pendingSeriesInstanceUID
+      );
 
       if (!resultDisplaySet?.displaySetInstanceUID) {
         scheduleHydrationRetry();
@@ -383,13 +458,13 @@ function ViewerLayout({
           await resultDisplaySet.load();
         } catch (error) {
           loadingResultDisplaySet = false;
-          if (attempts < 20) {
+          if (attempts < maxAttempts) {
             scheduleHydrationRetry();
           } else {
             uiNotificationService?.show({
-              title: 'Result View',
+              title: 'Finding View',
               message:
-                error instanceof Error ? error.message : 'Unable to load result annotations.',
+                error instanceof Error ? error.message : 'Unable to load finding annotations.',
               type: 'error',
             });
           }
@@ -414,7 +489,7 @@ function ViewerLayout({
           return;
         }
 
-        const result = commandsManager.runCommand('hydrateStructuredReport', {
+        const result = await commandsManager.runCommand('hydrateStructuredReport', {
           displaySetInstanceUID: resultDisplaySet.displaySetInstanceUID,
         });
 
@@ -436,16 +511,16 @@ function ViewerLayout({
         if (pendingSeriesInstanceUID) {
           hydratedSeriesInstanceUIDs.add(pendingSeriesInstanceUID);
         }
-        if (hydratedSeriesInstanceUIDs.size < resultSeriesInstanceUIDs.length) {
+        if (hydratedSeriesInstanceUIDs.size < seriesInstanceUIDs.length) {
           scheduleHydrationRetry();
         }
       } catch (error) {
-        if (attempts < 20) {
+        if (attempts < maxAttempts) {
           scheduleHydrationRetry();
         } else {
           uiNotificationService?.show({
-            title: 'Result View',
-            message: error instanceof Error ? error.message : 'Unable to load result annotations.',
+            title: 'Finding View',
+            message: error instanceof Error ? error.message : 'Unable to load finding annotations.',
             type: 'error',
           });
         }
@@ -467,6 +542,7 @@ function ViewerLayout({
   }, [
     commandsManager,
     displaySetService,
+    isEvaluationAdmin,
     isEvaluationResult,
     resultSeriesInstanceUIDs,
     uiNotificationService,
@@ -735,7 +811,7 @@ function ViewerLayout({
           )}
           <ResizablePanelGroup {...resizablePanelGroupProps}>
             {/* LEFT SIDEPANELS */}
-            {!isStudyFeedback && hasLeftPanels ? (
+            {!isStudyFeedback && !isEvaluationAttempt && hasLeftPanels ? (
               <>
                 <ResizablePanel {...resizableLeftPanelProps}>
                   <SidePanelWithServices
@@ -789,9 +865,9 @@ function ViewerLayout({
                       />
                     )}
                   </div>
-                ) : isEvaluationAdmin || isEvaluationAttempt || isEvaluationResult ? (
+                ) : isEvaluationViewer ? (
                   <div
-                    className="bg-background relative flex h-full min-h-0 flex-1 items-center justify-center overflow-hidden"
+                    className="bg-background relative flex h-full min-h-0 flex-1 overflow-hidden"
                     onMouseEnter={handleMouseEnter}
                   >
                     {isEvaluationAdmin && (
@@ -800,18 +876,35 @@ function ViewerLayout({
                           type="button"
                           onClick={saveEvaluationResult}
                           className="bg-primary-main hover:bg-primary-light focus:ring-primary-light text-primary-foreground inline-flex h-9 items-center gap-2 rounded px-3 text-sm font-medium shadow-lg transition focus:outline-none focus:ring-2"
-                          title="Save annotations as evaluation result"
+                          title="Save annotations as finding"
                         >
                           <Icons.Add className="h-4 w-4" />
-                          <span>Save result</span>
+                          <span>Save finding</span>
                         </button>
                       </div>
                     )}
-                    <ViewportGridComp
-                      servicesManager={servicesManager}
-                      viewportComponents={viewportComponents}
-                      commandsManager={commandsManager}
-                    />
+                    <div className="relative flex h-full min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+                      <ViewportGridComp
+                        servicesManager={servicesManager}
+                        viewportComponents={viewportComponents}
+                        commandsManager={commandsManager}
+                      />
+                    </div>
+                    {(isEvaluationAdmin || isEvaluationResult) && (
+                      <aside className="border-input bg-background/95 h-full w-80 shrink-0 overflow-y-auto border-l p-3">
+                        <div className="text-foreground mb-3 text-sm font-semibold">Findings</div>
+                        <PanelMeasurement
+                          servicesManager={servicesManager}
+                          commandsManager={commandsManager}
+                          extensionManager={extensionManager}
+                          emptyComponent={() => (
+                            <div className="text-muted-foreground text-sm">
+                              {isEvaluationResult ? 'No findings linked.' : 'No findings yet.'}
+                            </div>
+                          )}
+                        />
+                      </aside>
+                    )}
                   </div>
                 ) : (
                   <GazeCalibrationGate
@@ -886,7 +979,7 @@ function ViewerLayout({
                 )}
               </div>
             </ResizablePanel>
-            {!isStudyFeedback && hasRightPanels ? (
+            {!isStudyFeedback && !isEvaluationViewer && hasRightPanels ? (
               <>
                 <ResizableHandle
                   onDragging={onHandleDragging}

@@ -3,9 +3,23 @@ import { NO_IMAGE_ID } from '@cornerstonejs/adapters';
 
 function getFilteredCornerstoneToolState(measurementData, additionalFindingTypes) {
   const filteredToolState = {};
+  const measurementsByUid = new Map(
+    measurementData.map(measurement => [measurement.uid, measurement])
+  );
 
   function addToFilteredToolState(annotation, toolType) {
-    const imageId = annotation.metadata?.referencedImageId ?? NO_IMAGE_ID;
+    const measurementDataI = measurementsByUid.get(annotation.annotationUID);
+
+    if (!measurementDataI) {
+      return;
+    }
+
+    const imageId =
+      annotation.metadata?.referencedImageId ??
+      measurementDataI?.referencedImageId ??
+      NO_IMAGE_ID;
+
+    annotation = normalizeAnnotationForExport(annotation, measurementDataI, imageId);
 
     if (!filteredToolState[imageId]) {
       filteredToolState[imageId] = {};
@@ -19,7 +33,6 @@ function getFilteredCornerstoneToolState(measurementData, additionalFindingTypes
       };
     }
 
-    const measurementDataI = measurementData.find(md => md.uid === annotation.annotationUID);
     const toolData = imageIdSpecificToolState[toolType].data;
 
     let { finding } = measurementDataI;
@@ -92,6 +105,22 @@ function getFilteredCornerstoneToolState(measurementData, additionalFindingTypes
   }
 
   return filteredToolState;
+}
+
+function normalizeAnnotationForExport(annotation, measurementDataI, imageId) {
+  const referencedImageId = imageId === NO_IMAGE_ID ? undefined : imageId;
+
+  return {
+    ...annotation,
+    predecessorImageId: annotation.predecessorImageId ?? measurementDataI.predecessorImageId,
+    metadata: {
+      ...measurementDataI.metadata,
+      ...annotation.metadata,
+      FrameOfReferenceUID:
+        annotation.metadata?.FrameOfReferenceUID ?? measurementDataI.FrameOfReferenceUID,
+      referencedImageId,
+    },
+  };
 }
 
 export default getFilteredCornerstoneToolState;

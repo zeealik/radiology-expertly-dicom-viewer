@@ -223,6 +223,17 @@ export default function hydrateStructuredReport(
         }
       });
 
+      if (
+        hasMatchingHydratedMeasurement(
+          measurementService,
+          annotationType,
+          annotation,
+          targetStudyInstanceUID
+        )
+      ) {
+        return;
+      }
+
       const matchingMapping = mappings.find(m => m.annotationType === annotationType);
 
       const newAnnotationUID = measurementService.addRawMeasurement(
@@ -254,6 +265,53 @@ export default function hydrateStructuredReport(
     StudyInstanceUID: targetStudyInstanceUID,
     SeriesInstanceUIDs,
   };
+}
+
+function hasMatchingHydratedMeasurement(
+  measurementService,
+  annotationType,
+  annotation,
+  targetStudyInstanceUID
+) {
+  const points = annotation.data?.handles?.points;
+  const label = annotation.data?.label;
+  const referencedImageId = annotation.metadata?.referencedImageId;
+
+  return measurementService.getMeasurements?.(measurement => {
+    if (measurement.toolName !== annotationType) {
+      return false;
+    }
+
+    if (targetStudyInstanceUID && measurement.referenceStudyUID !== targetStudyInstanceUID) {
+      return false;
+    }
+
+    if (referencedImageId && measurement.referencedImageId !== referencedImageId) {
+      return false;
+    }
+
+    if ((measurement.label || '') !== (label || '')) {
+      return false;
+    }
+
+    return pointsMatch(measurement.points, points);
+  })?.length;
+}
+
+function pointsMatch(first = [], second = []) {
+  if (first.length !== second.length) {
+    return false;
+  }
+
+  return first.every((point, pointIndex) => {
+    const otherPoint = second[pointIndex];
+
+    if (!Array.isArray(point) || !Array.isArray(otherPoint) || point.length !== otherPoint.length) {
+      return false;
+    }
+
+    return point.every((value, valueIndex) => Math.abs(value - otherPoint[valueIndex]) < 0.001);
+  });
 }
 
 /**

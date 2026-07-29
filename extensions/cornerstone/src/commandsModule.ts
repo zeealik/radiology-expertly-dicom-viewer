@@ -1851,6 +1851,12 @@ function commandsModule({
     },
 
     deleteActiveAnnotation: () => {
+      const params = new URLSearchParams(window.location.search);
+      const readOnly = params.get('readOnly') || params.get('readonly');
+      if (readOnly === '1' || readOnly === 'true') {
+        return;
+      }
+
       const activeAnnotationsUID = cornerstoneTools.annotation.selection.getAnnotationsSelected();
       activeAnnotationsUID.forEach(activeAnnotationUID => {
         measurementService.remove(activeAnnotationUID);

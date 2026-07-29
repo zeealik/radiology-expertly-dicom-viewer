@@ -30,7 +30,12 @@ export default function ToolButtonListWrapper({ buttonSection, id }: ToolButtonL
     return null;
   }
 
+  const preferredPrimary =
+    id === 'MeasurementTools' || id === 'MoreTools'
+      ? toolbarButtons.find(button => button.componentProps.id === 'ArrowAnnotate')
+      : null;
   const primary =
+    preferredPrimary?.componentProps ||
     toolbarButtons.find(button => button.componentProps.isActive)?.componentProps ||
     toolbarButtons[0].componentProps;
 
