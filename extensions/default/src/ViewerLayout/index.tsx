@@ -408,7 +408,9 @@ function ViewerLayout({
     let loadingResultDisplaySet = false;
     let retryHandle: ReturnType<typeof window.setTimeout> | undefined;
     let attempts = 0;
-    const maxAttempts = 80;
+    // 250ms * 480 = up to 2 minutes; large referenced series can take a while to resolve their
+    // imageIds on a cold cache, and every "still waiting" pass spends one attempt.
+    const maxAttempts = 480;
     const scheduleHydrationRetry = () => {
       if (attempts < maxAttempts) {
         retryHandle = window.setTimeout(hydrateResultSeries, 250);
@@ -474,6 +476,24 @@ function ViewerLayout({
       }
 
       if (!Array.isArray(resultDisplaySet.measurements)) {
+        scheduleHydrationRetry();
+        return;
+      }
+
+      /**
+       * `hydrateStructuredReport` builds its SOPInstanceUID -> imageId map purely from
+       * `displaySet.measurements[].imageId`, which the SR SOP class handler only fills in once the
+       * *referenced* image displaySet has been matched (`_checkIfCanAddMeasurementsToDisplaySet`).
+       * The referenced series is usually still loading when the SR displaySet first appears, so
+       * hydrating now yields an empty map and the CS3D adapter throws
+       * `MetadataProvider::Empty imageId` — swallowed as a console.warn, leaving zero measurements
+       * and a permanently empty Findings panel. Wait for the image references to resolve.
+       */
+      const hasUnresolvedImageReferences = resultDisplaySet.measurements.some(
+        measurement => measurement?.coords?.[0]?.ValueType !== 'SCOORD3D' && !measurement?.imageId
+      );
+
+      if (hasUnresolvedImageReferences) {
         scheduleHydrationRetry();
         return;
       }
