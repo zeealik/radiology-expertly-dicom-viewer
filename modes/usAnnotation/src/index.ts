@@ -96,7 +96,7 @@ function modeFactory({ modeConfiguration }) {
         measurementTrackingMode: appConfig?.measurementTrackingMode,
       };
       appConfig.disableConfirmationPrompts = true;
-      appConfig.measurementTrackingMode = 'simplified';
+      appConfig.measurementTrackingMode = 'none';
       const { measurementService, toolbarService, toolGroupService, customizationService } =
         servicesManager.services;
 
@@ -137,7 +137,6 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topRight, [
         'modalityLoadBadge',
-        'trackingStatus',
         'navigationComponent',
       ]);
 
@@ -313,9 +312,9 @@ function modeFactory({ modeConfiguration }) {
           return {
             id: ohif.layout,
             props: {
-              leftPanels: [tracked.thumbnailList],
+              leftPanels: [ohif.thumbnailList],
               leftPanelResizable: true,
-              rightPanels: [usAnnotation.panel, cornerstone.segmentation, tracked.measurements],
+              rightPanels: [usAnnotation.panel, cornerstone.segmentation, cornerstone.measurements],
               rightPanelResizable: true,
               viewports: [
                 {
