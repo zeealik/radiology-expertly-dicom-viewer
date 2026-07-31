@@ -9,6 +9,7 @@ window.config = {
   showWarningMessageForCrossOrigin: true,
   showCPUFallbackMessage: true,
   strictZSpacingForVolumeViewport: true,
+  evaluationDicomWebRoot: 'https://api.radiologyexpertly.com/dicom-web',
   defaultDataSourceName: 'radiologyExpertlyOrthanc',
   dataSources: [
     {

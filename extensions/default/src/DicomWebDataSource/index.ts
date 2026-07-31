@@ -45,7 +45,7 @@ const getEvaluationDicomWebRoot = () => {
     return;
   }
 
-  return window.config?.evaluationDicomWebRoot || 'http://localhost:8081/dicom-web';
+  return window.config?.evaluationDicomWebRoot;
 };
 
 export type DicomWebConfig = {
