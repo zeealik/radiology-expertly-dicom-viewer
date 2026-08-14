@@ -16,6 +16,7 @@ import getActiveViewportEnabledElement from './utils/getActiveViewportEnabledEle
 const { CORNERSTONE_3D_TOOLS_SOURCE_NAME, CORNERSTONE_3D_TOOLS_SOURCE_VERSION } = CSExtensionEnums;
 const { removeAnnotation } = annotation.state;
 const csToolsEvents = Enums.Events;
+const ignoredMeasurementToolNames = new Set(['Crosshairs', 'ReferenceLines']);
 
 const initMeasurementService = (
   measurementService,
@@ -63,6 +64,18 @@ const initMeasurementService = (
   measurementService.addMapping(
     csTools3DVer1MeasurementSource,
     'Crosshairs',
+    Length.matchingCriteria,
+    () => {
+      return null;
+    },
+    () => {
+      return null;
+    }
+  );
+
+  measurementService.addMapping(
+    csTools3DVer1MeasurementSource,
+    'ReferenceLines',
     Length.matchingCriteria,
     () => {
       return null;
@@ -230,6 +243,10 @@ const connectToolsToMeasurementService = ({
       } = annotationAddedEventDetail;
       const { toolName } = metadata;
 
+      if (ignoredMeasurementToolNames.has(toolName)) {
+        return;
+      }
+
       if (csToolsEvent.type === completedEvt && toolName === toolNames.CalibrationLine) {
         // show modal to input the measurement (mm)
         onCompletedCalibrationLine(servicesManager, csToolsEvent)
@@ -274,6 +291,10 @@ const connectToolsToMeasurementService = ({
         return;
       }
       const { toolName } = metadata;
+
+      if (ignoredMeasurementToolNames.has(toolName)) {
+        return;
+      }
 
       annotationModifiedEventDetail.uid = annotationUID;
       // Passing true to indicate this is an update and NOT a annotation (start) completion.

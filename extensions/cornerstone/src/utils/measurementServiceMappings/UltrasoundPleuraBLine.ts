@@ -36,8 +36,11 @@ const UltrasoundPleuraBLine = {
       throw new Error('Tool not supported');
     }
 
-    const { SOPInstanceUID, SeriesInstanceUID, StudyInstanceUID } =
-      getSOPInstanceAttributes(referencedImageId);
+    const { SOPInstanceUID, SeriesInstanceUID, StudyInstanceUID } = getSOPInstanceAttributes(
+      referencedImageId,
+      displaySetService,
+      annotation
+    );
 
     let displaySet;
 
@@ -47,7 +50,7 @@ const UltrasoundPleuraBLine = {
         SeriesInstanceUID
       );
     } else {
-      displaySet = displaySetService.getDisplaySetsForSeries(SeriesInstanceUID);
+      displaySet = displaySetService.getDisplaySetsForSeries(SeriesInstanceUID)[0];
     }
 
     const { points } = data.handles;
@@ -86,18 +89,20 @@ function getMappedAnnotations(annotation, DisplaySetService) {
   const { referencedImageId } = metadata;
 
   const annotations = [];
-  if (!referencedImageId) {
-    throw new Error('Non-acquisition plane measurement mapping not supported');
-  }
 
-  const { SOPInstanceUID, SeriesInstanceUID, frameNumber } =
-    getSOPInstanceAttributes(referencedImageId);
-
-  const displaySet = DisplaySetService.getDisplaySetForSOPInstanceUID(
-    SOPInstanceUID,
-    SeriesInstanceUID,
-    frameNumber
+  const { SOPInstanceUID, SeriesInstanceUID, frameNumber } = getSOPInstanceAttributes(
+    referencedImageId,
+    DisplaySetService,
+    annotation
   );
+
+  const displaySet = SOPInstanceUID
+    ? DisplaySetService.getDisplaySetForSOPInstanceUID(
+        SOPInstanceUID,
+        SeriesInstanceUID,
+        frameNumber
+      )
+    : DisplaySetService.getDisplaySetsForSeries(SeriesInstanceUID)[0];
 
   const { SeriesNumber } = displaySet;
 
