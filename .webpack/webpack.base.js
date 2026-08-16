@@ -25,6 +25,7 @@ const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin'
 // ~~ ENV VARS
 const NODE_ENV = process.env.NODE_ENV;
 const QUICK_BUILD = process.env.QUICK_BUILD;
+const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false';
 const BUILD_NUM = process.env.CIRCLE_BUILD_NUM || '0';
 const IS_COVERAGE = process.env.COVERAGE === 'true';
 const USE_REACT_REFRESH = process.env.REACT_REFRESH === 'true';
@@ -59,14 +60,30 @@ if (!process.env.APP_CONFIG) {
   defineValues['process.env.APP_CONFIG'] = '';
 }
 
+const getTerserParallel = () => {
+  const { TERSER_PARALLEL } = process.env;
+
+  if (TERSER_PARALLEL === undefined || TERSER_PARALLEL === 'true') {
+    return true;
+  }
+
+  if (TERSER_PARALLEL === 'false') {
+    return false;
+  }
+
+  const parallelCount = Number(TERSER_PARALLEL);
+  return Number.isInteger(parallelCount) && parallelCount > 0 ? parallelCount : true;
+};
+
 module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
   const mode = NODE_ENV === 'production' ? 'production' : 'development';
   const isProdBuild = NODE_ENV === 'production';
   const isQuickBuild = QUICK_BUILD === 'true';
+  const terserParallel = getTerserParallel();
 
   const config = {
     mode: isProdBuild ? 'production' : 'development',
-    devtool: isProdBuild ? 'source-map' : 'cheap-module-source-map',
+    devtool: isProdBuild ? (GENERATE_SOURCEMAP ? 'source-map' : false) : 'cheap-module-source-map',
     entry: ENTRY,
     optimization: {
       // splitChunks: {
@@ -238,7 +255,7 @@ module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
   if (isProdBuild) {
     config.optimization.minimizer = [
       new TerserJSPlugin({
-        parallel: true,
+        parallel: terserParallel,
         terserOptions: {},
       }),
     ];

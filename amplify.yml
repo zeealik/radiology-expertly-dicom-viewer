@@ -6,10 +6,12 @@ applications:
       phases:
         preBuild:
           commands:
+            - nvm install 20.9.0
+            - nvm use 20.9.0
             - yarn install --frozen-lockfile
         build:
           commands:
-            - NODE_ENV=production APP_CONFIG=config/radiologyexpertly.js PUBLIC_URL=/ yarn workspace @ohif/app build
+            - NODE_ENV=production APP_CONFIG=config/radiologyexpertly.js PUBLIC_URL=/ GENERATE_SOURCEMAP=false TERSER_PARALLEL=2 yarn workspace @ohif/app build
       artifacts:
         baseDirectory: platform/app/dist
         files:
