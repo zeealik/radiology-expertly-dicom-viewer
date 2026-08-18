@@ -45,6 +45,18 @@ const getEvaluationDicomWebRoot = () => {
     return;
   }
 
+  const explicitRoot = searchParams.get('dicomWebRoot');
+  if (explicitRoot) {
+    return explicitRoot;
+  }
+
+  if (
+    !window.config?.evaluationDicomWebRoot &&
+    ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ) {
+    return 'http://localhost:8081/dicom-web';
+  }
+
   return window.config?.evaluationDicomWebRoot;
 };
 
