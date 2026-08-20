@@ -1,4 +1,5 @@
 import dicomImageLoader from '@cornerstonejs/dicom-image-loader';
+import dcmjs from 'dcmjs';
 
 import { PubSubService } from '@ohif/core';
 
@@ -23,6 +24,11 @@ export enum UploadStatus {
 }
 
 type CancelOrFailed = UploadStatus.Cancelled | UploadStatus.Failed;
+type UploadCallbacks = Record<string, EventListener>;
+type PreparedDicomUpload = {
+  arrayBuffer: ArrayBuffer;
+  studyInstanceUID?: string;
+};
 
 export class UploadRejection {
   message: string;
@@ -38,16 +44,18 @@ export default class DicomFileUploader extends PubSubService {
   private _file;
   private _fileId;
   private _dataSource;
+  private _patientName;
   private _loadPromise;
   private _abortController = new AbortController();
   private _status: UploadStatus = UploadStatus.NotStarted;
   private _percentComplete = 0;
 
-  constructor(file, dataSource) {
+  constructor(file, dataSource, patientName = '') {
     super(EVENTS);
     this._file = file;
     this._fileId = dicomImageLoader.wadouri.fileManager.add(file);
     this._dataSource = dataSource;
+    this._patientName = patientName;
   }
 
   getFileId(): string {
@@ -82,16 +90,18 @@ export default class DicomFileUploader extends PubSubService {
 
     this._loadPromise = new Promise<void>((resolve, reject) => {
       // The upload listeners: fire progress events and/or settle the promise.
-      const uploadCallbacks = {
+      const uploadCallbacks: UploadCallbacks = {
         progress: evt => {
-          if (!evt.lengthComputable) {
+          const progressEvent = evt as ProgressEvent;
+
+          if (!progressEvent.lengthComputable) {
             // Progress computation is not possible.
             return;
           }
 
           this._status = UploadStatus.InProgress;
 
-          this._percentComplete = Math.round((100 * evt.loaded) / evt.total);
+          this._percentComplete = Math.round((100 * progressEvent.loaded) / progressEvent.total);
           this._broadcastEvent(EVENTS.PROGRESS, {
             fileId: this._fileId,
             percentComplete: this._percentComplete,
@@ -129,10 +139,18 @@ export default class DicomFileUploader extends PubSubService {
           const request = new XMLHttpRequest();
           this._addRequestCallbacks(request, uploadCallbacks);
 
+          const preparedDicom = this._patientName
+            ? this._prepareDicomForUpload(dicomFile, this._patientName)
+            : { arrayBuffer: dicomFile };
+
           // Do the actual upload by supplying the DICOM file and upload callbacks/listeners.
           return this._dataSource.store
-            .dicom(dicomFile, request)
-            .then(() => {
+            .dicom(preparedDicom.arrayBuffer, request)
+            .then(async () => {
+              if (this._patientName && preparedDicom.studyInstanceUID) {
+                await this._applyStudyLabel(preparedDicom.studyInstanceUID, this._patientName);
+              }
+
               this._status = UploadStatus.Success;
               resolve();
             })
@@ -173,7 +191,7 @@ export default class DicomFileUploader extends PubSubService {
     reject(new UploadRejection(UploadStatus.Failed, reason));
   }
 
-  private _addRequestCallbacks(request: XMLHttpRequest, uploadCallbacks) {
+  private _addRequestCallbacks(request: XMLHttpRequest, uploadCallbacks: UploadCallbacks) {
     const abortCallback = () => request.abort();
     this._abortController.signal.addEventListener('abort', abortCallback);
 
@@ -194,11 +212,91 @@ export default class DicomFileUploader extends PubSubService {
   }
 
   private _checkDicomFile(arrayBuffer: ArrayBuffer) {
-    if (arrayBuffer.length <= 132) {
+    if (arrayBuffer.byteLength <= 132) {
       return false;
     }
     const arr = new Uint8Array(arrayBuffer.slice(128, 132));
     // bytes from 128 to 132 must be "DICM"
     return Array.from('DICM').every((char, i) => char.charCodeAt(0) === arr[i]);
+  }
+
+  private _prepareDicomForUpload(
+    arrayBuffer: ArrayBuffer,
+    patientName: string
+  ): PreparedDicomUpload {
+    const { DicomMessage } = dcmjs.data;
+    const dicomData = DicomMessage.readFile(arrayBuffer);
+    const studyInstanceUID = this._getDicomStringValue(dicomData.dict['0020000D']);
+
+    dicomData.dict['00100010'] = {
+      vr: 'PN',
+      Value: [patientName],
+    };
+
+    return {
+      arrayBuffer: dicomData.write(),
+      studyInstanceUID,
+    };
+  }
+
+  private _getDicomStringValue(element): string | undefined {
+    const value = element?.Value?.[0];
+
+    return typeof value === 'string' && value ? value : undefined;
+  }
+
+  private async _applyStudyLabel(studyInstanceUID: string, label: string): Promise<void> {
+    const orthancRoot = this._getOrthancRoot();
+
+    if (!orthancRoot) {
+      return;
+    }
+
+    const studiesResponse = await fetch(`${orthancRoot}/tools/find`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Level: 'Study',
+        Query: {
+          StudyInstanceUID: studyInstanceUID,
+        },
+      }),
+    });
+
+    if (!studiesResponse.ok) {
+      throw new Error('Unable to find uploaded Orthanc study for labeling.');
+    }
+
+    const studyIds = await studiesResponse.json();
+    const studyId = Array.isArray(studyIds) ? studyIds[0] : null;
+
+    if (!studyId) {
+      return;
+    }
+
+    const labelResponse = await fetch(
+      `${orthancRoot}/studies/${encodeURIComponent(studyId)}/labels/${encodeURIComponent(label)}`,
+      {
+        method: 'PUT',
+      }
+    );
+
+    if (!labelResponse.ok) {
+      throw new Error('Unable to apply Orthanc study label.');
+    }
+  }
+
+  private _getOrthancRoot(): string | undefined {
+    const config = this._dataSource.getConfig?.();
+    const dicomWebRoot = config?.qidoRoot || config?.wadoRoot || config?.wadoUriRoot;
+
+    if (typeof dicomWebRoot !== 'string' || !dicomWebRoot) {
+      return undefined;
+    }
+
+    return dicomWebRoot.replace(/\/dicom-web\/?$/, '').replace(/\/$/, '');
   }
 }
