@@ -1,11 +1,13 @@
 import { StackScrollTool as CornerstoneStackScrollTool } from '@cornerstonejs/tools';
 
 const DEFAULT_WHEEL_SENSITIVITY = 3;
+const WHEEL_PIXELS_PER_STEP = 40;
+const DEFAULT_MAX_WHEEL_STEPS_PER_EVENT = 3;
 
 export default class StackScrollTool extends CornerstoneStackScrollTool {
   static toolName = CornerstoneStackScrollTool.toolName;
 
-  private wheelDelta = 0;
+  private wheelPixelDelta = 0;
 
   constructor(
     toolProps = {},
@@ -16,6 +18,7 @@ export default class StackScrollTool extends CornerstoneStackScrollTool {
         debounceIfNotLoaded: true,
         loop: false,
         wheelSensitivity: DEFAULT_WHEEL_SENSITIVITY,
+        maxWheelStepsPerEvent: DEFAULT_MAX_WHEEL_STEPS_PER_EVENT,
       },
     }
   ) {
@@ -23,27 +26,34 @@ export default class StackScrollTool extends CornerstoneStackScrollTool {
   }
 
   mouseWheelCallback(evt) {
-    const wheelSensitivity = Math.max(1, this.configuration.wheelSensitivity || 1);
+    const wheel = evt.detail.wheel;
+    const rawPixelY = Number(wheel.pixelY);
+    const direction = Number(wheel.direction);
+    const pixelY = Number.isFinite(rawPixelY) && rawPixelY !== 0
+      ? rawPixelY
+      : direction * WHEEL_PIXELS_PER_STEP;
 
-    if (wheelSensitivity === 1) {
-      super.mouseWheelCallback(evt);
+    if (!pixelY) {
       return;
     }
 
-    const direction = evt.detail.wheel.direction;
+    const wheelSensitivity = Math.max(1, Number(this.configuration.wheelSensitivity) || 1);
+    const pixelsPerStep = Math.max(1, WHEEL_PIXELS_PER_STEP * wheelSensitivity);
 
-    if (!direction) {
+    this.wheelPixelDelta += pixelY;
+
+    if (Math.abs(this.wheelPixelDelta) < pixelsPerStep) {
       return;
     }
 
-    this.wheelDelta += direction;
+    const maxStepsPerEvent = Math.max(
+      1,
+      Number(this.configuration.maxWheelStepsPerEvent) || DEFAULT_MAX_WHEEL_STEPS_PER_EVENT
+    );
+    const rawSteps = Math.trunc(this.wheelPixelDelta / pixelsPerStep);
+    const steps = Math.sign(rawSteps) * Math.min(Math.abs(rawSteps), maxStepsPerEvent);
 
-    if (Math.abs(this.wheelDelta) < wheelSensitivity) {
-      return;
-    }
-
-    const steps = Math.trunc(this.wheelDelta / wheelSensitivity);
-    this.wheelDelta %= wheelSensitivity;
+    this.wheelPixelDelta -= steps * pixelsPerStep;
 
     for (let i = 0; i < Math.abs(steps); i++) {
       super.mouseWheelCallback({
@@ -51,7 +61,7 @@ export default class StackScrollTool extends CornerstoneStackScrollTool {
         detail: {
           ...evt.detail,
           wheel: {
-            ...evt.detail.wheel,
+            ...wheel,
             direction: Math.sign(steps),
           },
         },
