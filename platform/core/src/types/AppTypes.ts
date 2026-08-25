@@ -142,6 +142,7 @@ declare global {
       peerImport?: (moduleId: string) => Promise<Record<string, unknown>>;
       studyPrefetcher?: {
         enabled: boolean;
+        preloadAllDisplaySets?: boolean;
         displaySetsCount: number;
         maxNumPrefetchRequests: number;
         order: 'closest' | 'downward' | 'upward';

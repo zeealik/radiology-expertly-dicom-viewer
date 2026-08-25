@@ -48,6 +48,52 @@ const routerFutureFlags: BrowserRouterProps['future'] = {
   v7_relativeSplatPath: true,
 };
 
+const DICOM_PRELOAD_MESSAGE_TYPE = 'radiology-expertly:dicom-preload-progress';
+
+function DicomPreloadProgressBridge({ servicesManager }) {
+  useEffect(() => {
+    const shouldPostProgress =
+      window.parent !== window &&
+      new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+    const studyPrefetcherService = servicesManager.services.studyPrefetcherService;
+
+    if (!shouldPostProgress || !studyPrefetcherService?.getAggregateLoadingProgress) {
+      return;
+    }
+
+    const postProgress = () => {
+      const progress = studyPrefetcherService.getAggregateLoadingProgress();
+      window.parent.postMessage(
+        {
+          type: DICOM_PRELOAD_MESSAGE_TYPE,
+          ...progress,
+        },
+        '*'
+      );
+    };
+
+    postProgress();
+
+    const subscriptions = [
+      studyPrefetcherService.subscribe(studyPrefetcherService.EVENTS.SERVICE_STARTED, postProgress),
+      studyPrefetcherService.subscribe(
+        studyPrefetcherService.EVENTS.DISPLAYSET_LOAD_PROGRESS,
+        postProgress
+      ),
+      studyPrefetcherService.subscribe(
+        studyPrefetcherService.EVENTS.DISPLAYSET_LOAD_COMPLETE,
+        postProgress
+      ),
+    ];
+
+    return () => {
+      subscriptions.forEach(subscription => subscription.unsubscribe());
+    };
+  }, [servicesManager]);
+
+  return null;
+}
+
 function App({
   config = {
     /**
@@ -113,7 +159,7 @@ function App({
     customizationService,
   } = servicesManager.services;
 
-  const providers = [
+  const providers: any[] = [
     [AppConfigProvider, { value: appConfigState }],
     [UserAuthenticationProvider, { service: userAuthenticationService }],
     [I18nextProvider, { i18n }],
@@ -134,7 +180,10 @@ function App({
   const providersFromManager = Object.entries(serviceProvidersManager.providers);
   if (providersFromManager.length > 0) {
     providersFromManager.forEach(([serviceName, provider]) => {
-      providers.push([provider, { service: servicesManager.services[serviceName] }]);
+      providers.push([
+        provider as React.ComponentType<any>,
+        { service: servicesManager.services[serviceName] },
+      ]);
     });
   }
 
@@ -169,6 +218,7 @@ function App({
 
   return (
     <CombinedProviders>
+      <DicomPreloadProgressBridge servicesManager={servicesManager} />
       <BrowserRouter
         basename={routerBasename}
         future={routerFutureFlags}

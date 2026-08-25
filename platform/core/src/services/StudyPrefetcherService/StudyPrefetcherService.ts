@@ -37,6 +37,8 @@ enum StudyPrefetchOrder {
 type StudyPrefetcherConfig = {
   /* Enable/disable study prefetching service */
   enabled: boolean;
+  /* Load all active study display sets instead of only nearby display sets */
+  preloadAllDisplaySets?: boolean;
   /* Number of displaysets to be prefetched */
   displaySetsCount: number;
   /**
@@ -327,9 +329,32 @@ class StudyPrefetcherService extends PubSubService {
       displaySetsInstanceUIDs.length &&
       displaySetsInstanceUIDs.every(
         displaySetsInstanceUID =>
-          this._displaySetLoadingStates.get(displaySetsInstanceUID).loadingProgress >= 1
+          this._displaySetLoadingStates.get(displaySetsInstanceUID)?.loadingProgress >= 1
       )
     );
+  }
+
+  public getAggregateLoadingProgress() {
+    const states = Array.from(this._displaySetLoadingStates.values());
+    const totalImages = states.reduce((total, state) => total + state.numInstances, 0);
+    const loadedImages = states.reduce(
+      (total, state) => total + state.loadedImageIds.size + state.failedImageIds.size,
+      0
+    );
+    const failedImages = states.reduce((total, state) => total + state.failedImageIds.size, 0);
+    const totalDisplaySets = states.length;
+    const loadedDisplaySets = states.filter(state => state.loadingProgress >= 1).length;
+    const progress = totalImages ? loadedImages / totalImages : 0;
+
+    return {
+      failedImages,
+      loadedDisplaySets,
+      loadedImages,
+      progress,
+      totalDisplaySets,
+      totalImages,
+      isComplete: totalImages > 0 && loadedImages >= totalImages,
+    };
   }
 
   private _getClosestDisplaySets(displaySets: DisplaySet[], activeDisplaySetIndex: number) {
@@ -435,7 +460,9 @@ class StudyPrefetcherService extends PubSubService {
 
   private _updateDisplaySetLoadingProgress(displaySetLoadingState: DisplaySetLoadingState) {
     const { numInstances, loadedImageIds, failedImageIds } = displaySetLoadingState;
-    const loadingProgress = (loadedImageIds.size + failedImageIds.size) / numInstances;
+    const loadingProgress = numInstances
+      ? (loadedImageIds.size + failedImageIds.size) / numInstances
+      : 1;
 
     displaySetLoadingState.loadingProgress = loadingProgress;
   }
@@ -485,7 +512,10 @@ class StudyPrefetcherService extends PubSubService {
     const { displaySets, displaySetsToPrefetch } = this._getDisplaySets();
 
     displaySets.forEach(displaySet => this._addDisplaySetLoadingState(displaySet));
-    displaySetsToPrefetch.forEach(displaySet => this._enqueueDisplaySetImagesRequests(displaySet));
+    const displaySetsToLoad = this.config.preloadAllDisplaySets
+      ? displaySets
+      : displaySetsToPrefetch;
+    displaySetsToLoad.forEach(displaySet => this._enqueueDisplaySetImagesRequests(displaySet));
   }
 
   private _moveImageIdToLoadedSet(imageId: string): boolean {
@@ -586,8 +616,9 @@ class StudyPrefetcherService extends PubSubService {
       return;
     }
 
-    // Does not send any prefetch request until the active display sets are loaded
-    if (!this._areActiveDisplaySetsLoaded()) {
+    // Does not send nearby prefetch requests until the active display sets are loaded.
+    // Full exam preloading also queues active display set slices, so it must start immediately.
+    if (!this.config.preloadAllDisplaySets && !this._areActiveDisplaySetsLoaded()) {
       return;
     }
 

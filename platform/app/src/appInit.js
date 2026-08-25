@@ -28,7 +28,7 @@ import loadModules, { loadModule as peerImport } from './pluginImports';
 import { publicUrl } from './utils/publicUrl';
 
 /**
- * @param {object|func} appConfigOrFunc - application configuration, or a function that returns application configuration
+ * @param {object|Function} appConfigOrFunc - application configuration, or a function that returns application configuration
  * @param {object[]} defaultExtensions - array of extension objects
  */
 async function appInit(appConfigOrFunc, defaultExtensions, defaultModes) {
@@ -50,6 +50,21 @@ async function appInit(appConfigOrFunc, defaultExtensions, defaultModes) {
   appConfig.peerImport ||= peerImport;
   appConfig.measurementTrackingMode ||= 'standard';
   appConfig.routerBasename ||= publicUrl;
+
+  const shouldPreloadAllImages =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+
+  if (shouldPreloadAllImages) {
+    appConfig.studyPrefetcher = {
+      ...appConfig.studyPrefetcher,
+      enabled: true,
+      displaySetsCount: appConfig.studyPrefetcher?.displaySetsCount ?? 1,
+      maxNumPrefetchRequests: appConfig.studyPrefetcher?.maxNumPrefetchRequests ?? 10,
+      order: appConfig.studyPrefetcher?.order ?? 'downward',
+      preloadAllDisplaySets: true,
+    };
+  }
 
   const extensionManager = new ExtensionManager({
     commandsManager,

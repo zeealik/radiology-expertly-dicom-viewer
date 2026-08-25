@@ -1,16 +1,33 @@
-navigator.serviceWorker.getRegistrations().then(function (registrations) {
-  for (let registration of registrations) {
-    registration.unregister();
-  }
-});
-
 // https://developers.google.com/web/tools/workbox/guides/troubleshoot-and-debug
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.0.0-beta.1/workbox-sw.js');
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
 
 // Install newest
 // https://developers.google.com/web/tools/workbox/modules/workbox-core
-workbox.core.skipWaiting();
+self.skipWaiting();
 workbox.core.clientsClaim();
+
+const DICOM_RESPONSE_CACHE = 'radiology-dicom-responses-v1';
+const DICOM_CACHEABLE_ORIGINS = new Set([
+  'https://api-viewer.radiologyexpertly.com',
+  'https://api.radiologyexpertly.com',
+]);
+
+const isDicomPixelRequest = ({ request, url }) => {
+  if (request.method !== 'GET' || !DICOM_CACHEABLE_ORIGINS.has(url.origin)) {
+    return false;
+  }
+
+  const pathname = url.pathname.toLowerCase();
+  if (pathname.includes('/orthanc/wado')) {
+    return url.searchParams.get('requestType')?.toUpperCase() === 'WADO';
+  }
+
+  const isDicomWebPath =
+    pathname.includes('/dicom-web/') || pathname.includes('/orthanc/dicom-web/');
+  const retrievesInstance = pathname.includes('/instances/');
+
+  return isDicomWebPath && retrievesInstance;
+};
 
 // Cache static assets that aren't precached
 workbox.routing.registerRoute(
@@ -45,15 +62,31 @@ workbox.routing.registerRoute(
   })
 );
 
+// Cache immutable DICOM pixel payloads across refreshes so a candidate does not
+// have to download the full case again after the browser reloads the viewer.
+workbox.routing.registerRoute(
+  isDicomPixelRequest,
+  new workbox.strategies.CacheFirst({
+    cacheName: DICOM_RESPONSE_CACHE,
+    plugins: [
+      new workbox.cacheableResponse.CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new workbox.expiration.ExpirationPlugin({
+        maxAgeSeconds: 60 * 60 * 24,
+        maxEntries: 4000,
+        purgeOnQuotaError: true,
+      }),
+    ],
+  })
+);
+
 // MESSAGE HANDLER
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     switch (event.data.type) {
       case 'SKIP_WAITING':
-        // TODO: We'll eventually want this to be user prompted
-        // workbox.core.skipWaiting();
-        // workbox.core.clientsClaim();
-        // TODO: Global notification to indicate incoming reload
+        self.skipWaiting();
         break;
 
       default:

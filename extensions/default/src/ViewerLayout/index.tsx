@@ -44,7 +44,8 @@ const getRequestFailureMessage = (error: unknown, fallback: string): string => {
     request?: { status?: number; response?: unknown; responseText?: string };
   };
   const status = requestError.status || requestError.request?.status;
-  const response = requestError.response ?? requestError.request?.response ?? requestError.request?.responseText;
+  const response =
+    requestError.response ?? requestError.request?.response ?? requestError.request?.responseText;
 
   if (status) {
     const detail =
@@ -262,13 +263,19 @@ function ViewerLayout({
 
     const subscriptions = [
       toolGroupService.EVENTS?.TOOLGROUP_CREATED
-        ? toolGroupService.subscribe?.(toolGroupService.EVENTS.TOOLGROUP_CREATED, disableWritableTools)
+        ? toolGroupService.subscribe?.(
+            toolGroupService.EVENTS.TOOLGROUP_CREATED,
+            disableWritableTools
+          )
         : undefined,
       toolGroupService.EVENTS?.VIEWPORT_ADDED
         ? toolGroupService.subscribe?.(toolGroupService.EVENTS.VIEWPORT_ADDED, disableWritableTools)
         : undefined,
       viewportGridService?.EVENTS?.VIEWPORTS_READY
-        ? viewportGridService.subscribe?.(viewportGridService.EVENTS.VIEWPORTS_READY, disableWritableTools)
+        ? viewportGridService.subscribe?.(
+            viewportGridService.EVENTS.VIEWPORTS_READY,
+            disableWritableTools
+          )
         : undefined,
     ];
 
@@ -313,8 +320,7 @@ function ViewerLayout({
             displaySet?.StudyInstanceUID ||
             studyInstanceUIDs[0] ||
             null,
-          seriesInstanceUID:
-            instance?.SeriesInstanceUID || displaySet?.SeriesInstanceUID || null,
+          seriesInstanceUID: instance?.SeriesInstanceUID || displaySet?.SeriesInstanceUID || null,
           sopInstanceUID:
             instance?.SOPInstanceUID ||
             instance?.metadata?.SOPInstanceUID ||
@@ -502,7 +508,9 @@ function ViewerLayout({
         const viewportGridState = viewportGridService?.getState?.();
         const viewportId =
           viewportGridService?.getActiveViewportId?.() ||
-          (viewportGridState?.viewports ? Array.from(viewportGridState.viewports.keys())[0] : undefined);
+          (viewportGridState?.viewports
+            ? Array.from(viewportGridState.viewports.keys())[0]
+            : undefined);
 
         if (!viewportId) {
           scheduleHydrationRetry();
@@ -831,7 +839,7 @@ function ViewerLayout({
           )}
           <ResizablePanelGroup {...resizablePanelGroupProps}>
             {/* LEFT SIDEPANELS */}
-            {!isStudyFeedback && !isEvaluationAttempt && hasLeftPanels ? (
+            {!isStudyFeedback && hasLeftPanels ? (
               <>
                 <ResizablePanel {...resizableLeftPanelProps}>
                   <SidePanelWithServices
