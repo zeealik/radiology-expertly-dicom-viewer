@@ -2,3 +2,9 @@ body {
   overscroll-behavior: none;
   touch-action: none;
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

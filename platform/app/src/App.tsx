@@ -49,40 +49,66 @@ const routerFutureFlags: BrowserRouterProps['future'] = {
 };
 
 const DICOM_PRELOAD_MESSAGE_TYPE = 'radiology-expertly:dicom-preload-progress';
+const DICOM_PRELOAD_INITIAL_PROGRESS = {
+  failedImages: 0,
+  loadedDisplaySets: 0,
+  loadedImages: 0,
+  progress: 0,
+  totalDisplaySets: 0,
+  totalImages: 0,
+  isComplete: false,
+};
 
 function DicomPreloadProgressBridge({ servicesManager }) {
+  const [localProgress, setLocalProgress] = useState(DICOM_PRELOAD_INITIAL_PROGRESS);
+
   useEffect(() => {
-    const shouldPostProgress =
-      window.parent !== window &&
+    const shouldTrackProgress =
       new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+    const shouldPostProgress = window.parent !== window && shouldTrackProgress;
+    const shouldShowLocalProgress = window.parent === window && shouldTrackProgress;
     const studyPrefetcherService = servicesManager.services.studyPrefetcherService;
 
-    if (!shouldPostProgress || !studyPrefetcherService?.getAggregateLoadingProgress) {
+    if (
+      !shouldTrackProgress ||
+      !studyPrefetcherService?.getAggregateLoadingProgress ||
+      (!shouldPostProgress && !shouldShowLocalProgress)
+    ) {
       return;
     }
 
-    const postProgress = () => {
+    const publishProgress = () => {
       const progress = studyPrefetcherService.getAggregateLoadingProgress();
-      window.parent.postMessage(
-        {
-          type: DICOM_PRELOAD_MESSAGE_TYPE,
-          ...progress,
-        },
-        '*'
-      );
+
+      if (shouldShowLocalProgress) {
+        setLocalProgress(progress);
+      }
+
+      if (shouldPostProgress) {
+        window.parent.postMessage(
+          {
+            type: DICOM_PRELOAD_MESSAGE_TYPE,
+            ...progress,
+          },
+          '*'
+        );
+      }
     };
 
-    postProgress();
+    publishProgress();
 
     const subscriptions = [
-      studyPrefetcherService.subscribe(studyPrefetcherService.EVENTS.SERVICE_STARTED, postProgress),
+      studyPrefetcherService.subscribe(
+        studyPrefetcherService.EVENTS.SERVICE_STARTED,
+        publishProgress
+      ),
       studyPrefetcherService.subscribe(
         studyPrefetcherService.EVENTS.DISPLAYSET_LOAD_PROGRESS,
-        postProgress
+        publishProgress
       ),
       studyPrefetcherService.subscribe(
         studyPrefetcherService.EVENTS.DISPLAYSET_LOAD_COMPLETE,
-        postProgress
+        publishProgress
       ),
     ];
 
@@ -91,7 +117,98 @@ function DicomPreloadProgressBridge({ servicesManager }) {
     };
   }, [servicesManager]);
 
-  return null;
+  const shouldShowLocalProgress =
+    window.parent === window &&
+    new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+  const preloadPercent = Math.round(Math.max(0, Math.min(localProgress.progress, 1)) * 100);
+
+  if (!shouldShowLocalProgress || localProgress.isComplete) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        right: 16,
+        bottom: 16,
+        zIndex: 10000,
+        width: 260,
+        maxWidth: 'calc(100vw - 32px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 8,
+        background: 'rgba(2, 6, 23, 0.95)',
+        boxShadow: '0 18px 45px rgba(0, 0, 0, 0.35)',
+        color: '#fff',
+        padding: 12,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 14,
+                height: 14,
+                border: '2px solid rgba(14, 165, 233, 0.25)',
+                borderTopColor: '#0ea5e9',
+                borderRadius: '999px',
+                display: 'inline-block',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700 }}>Loading case images</p>
+          </div>
+          <p
+            style={{
+              margin: '4px 0 0',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              color: 'rgba(255, 255, 255, 0.65)',
+              fontSize: 11,
+            }}
+          >
+            {localProgress.totalImages > 0
+              ? `${localProgress.loadedImages}/${localProgress.totalImages} slices`
+              : 'Preparing image load...'}
+          </p>
+        </div>
+        <p style={{ margin: 0, flexShrink: 0, fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+          {preloadPercent}%
+        </p>
+      </div>
+      <div
+        style={{
+          height: 6,
+          marginTop: 8,
+          overflow: 'hidden',
+          borderRadius: 999,
+          background: 'rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            borderRadius: 999,
+            background: '#0ea5e9',
+            transform: `scaleX(${preloadPercent / 100})`,
+            transformOrigin: 'left center',
+            transition: 'transform 300ms ease',
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function App({
