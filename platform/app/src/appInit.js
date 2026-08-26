@@ -27,6 +27,19 @@ import {
 import loadModules, { loadModule as peerImport } from './pluginImports';
 import { publicUrl } from './utils/publicUrl';
 
+function shouldEnableDefaultDicomPreload() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const preloadAllImages = searchParams.get('preloadAllImages');
+  const hasStudyParams =
+    searchParams.has('StudyInstanceUID') || searchParams.has('StudyInstanceUIDs');
+
+  return preloadAllImages !== '0' && hasStudyParams;
+}
+
 /**
  * @param {object|Function} appConfigOrFunc - application configuration, or a function that returns application configuration
  * @param {object[]} defaultExtensions - array of extension objects
@@ -51,11 +64,7 @@ async function appInit(appConfigOrFunc, defaultExtensions, defaultModes) {
   appConfig.measurementTrackingMode ||= 'standard';
   appConfig.routerBasename ||= publicUrl;
 
-  const shouldPreloadAllImages =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
-
-  if (shouldPreloadAllImages) {
+  if (shouldEnableDefaultDicomPreload()) {
     appConfig.studyPrefetcher = {
       ...appConfig.studyPrefetcher,
       enabled: true,

@@ -59,12 +59,20 @@ const DICOM_PRELOAD_INITIAL_PROGRESS = {
   isComplete: false,
 };
 
+function shouldTrackDicomPreloadProgress() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const preloadAllImages = searchParams.get('preloadAllImages');
+  const hasStudyParams =
+    searchParams.has('StudyInstanceUID') || searchParams.has('StudyInstanceUIDs');
+
+  return preloadAllImages !== '0' && hasStudyParams;
+}
+
 function DicomPreloadProgressBridge({ servicesManager }) {
   const [localProgress, setLocalProgress] = useState(DICOM_PRELOAD_INITIAL_PROGRESS);
 
   useEffect(() => {
-    const shouldTrackProgress =
-      new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+    const shouldTrackProgress = shouldTrackDicomPreloadProgress();
     const shouldPostProgress = window.parent !== window && shouldTrackProgress;
     const shouldShowLocalProgress = window.parent === window && shouldTrackProgress;
     const studyPrefetcherService = servicesManager.services.studyPrefetcherService;
@@ -117,9 +125,7 @@ function DicomPreloadProgressBridge({ servicesManager }) {
     };
   }, [servicesManager]);
 
-  const shouldShowLocalProgress =
-    window.parent === window &&
-    new URLSearchParams(window.location.search).get('preloadAllImages') === '1';
+  const shouldShowLocalProgress = window.parent === window && shouldTrackDicomPreloadProgress();
   const preloadPercent = Math.round(Math.max(0, Math.min(localProgress.progress, 1)) * 100);
 
   if (!shouldShowLocalProgress || localProgress.isComplete) {
