@@ -117,6 +117,7 @@ StudyBrowser.propTypes = {
               componentType: PropTypes.oneOf(['thumbnail', 'thumbnailTracked', 'thumbnailNoImage'])
                 .isRequired,
               isTracked: PropTypes.bool,
+              isInteractive: PropTypes.bool,
               /**
                * Data the thumbnail should expose to a receiving drop target. Use a matching
                * `dragData.type` to identify which targets can receive this draggable item.

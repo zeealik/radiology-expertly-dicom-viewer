@@ -22,18 +22,16 @@ export default class DICOMSRDisplayTool extends AnnotationTool {
     super(toolProps, defaultToolProps);
   }
 
-  _getTextBoxLinesFromLabels(labels) {
-    // TODO -> max 5 for now (label + shortAxis + longAxis), need a generic solution for this!
+  _getTextBoxLinesFromLabels(labels = [], graphicType) {
+    const lines = labels
+      .map(labelEntry => _formatLabelLine(labelEntry))
+      .filter(Boolean);
 
-    const labelLength = Math.min(labels.length, 5);
-    const lines = [];
-
-    for (let i = 0; i < labelLength; i++) {
-      const labelEntry = labels[i];
-      lines.push(`${_labelToShorthand(labelEntry.label)}: ${labelEntry.value}`);
+    if (graphicType === SCOORDTypes.POINT) {
+      return lines.slice(0, 1);
     }
 
-    return lines;
+    return lines.slice(0, 5);
   }
 
   // This tool should not inherit from AnnotationTool and we should not need
@@ -344,6 +342,7 @@ export default class DICOMSRDisplayTool extends AnnotationTool {
 
     const { annotationUID, data = {} } = annotation;
     const { labels } = data;
+    const { graphicType } = annotation.metadata;
     const { color } = options;
 
     let adaptedCanvasCoordinates = canvasCoordinates;
@@ -351,8 +350,16 @@ export default class DICOMSRDisplayTool extends AnnotationTool {
     if (typeof canvasCoordinatesAdapter === 'function') {
       adaptedCanvasCoordinates = canvasCoordinatesAdapter(canvasCoordinates);
     }
-    const textLines = this._getTextBoxLinesFromLabels(labels);
-    const canvasTextBoxCoords = utilities.drawing.getTextBoxCoordsCanvas(adaptedCanvasCoordinates);
+    const textLines = this._getTextBoxLinesFromLabels(labels, graphicType);
+
+    if (!textLines.length) {
+      return;
+    }
+
+    const canvasTextBoxCoords =
+      graphicType === SCOORDTypes.POINT && canvasCoordinates[1]
+        ? [canvasCoordinates[1][0] + 6, canvasCoordinates[1][1] - 6]
+        : utilities.drawing.getTextBoxCoordsCanvas(adaptedCanvasCoordinates);
 
     if (!annotation.data?.handles?.textBox?.worldPosition) {
       annotation.data.handles.textBox.worldPosition = viewport.canvasToWorld(canvasTextBoxCoords);
@@ -369,7 +376,7 @@ export default class DICOMSRDisplayTool extends AnnotationTool {
       textBoxUID,
       textLines,
       textBoxPosition,
-      canvasCoordinates,
+      graphicType === SCOORDTypes.POINT ? [] : canvasCoordinates,
       {},
       {
         ...textBoxOptions,
@@ -404,4 +411,25 @@ function _labelToShorthand(label) {
   }
 
   return label;
+}
+
+function _formatLabelLine(labelEntry) {
+  const label = String(labelEntry?.label ?? '').trim();
+  const value = String(labelEntry?.value ?? '').trim();
+
+  if (!label && !value) {
+    return;
+  }
+
+  const shortHand = _labelToShorthand(label);
+
+  if (!value) {
+    return shortHand || label;
+  }
+
+  if (!shortHand) {
+    return value;
+  }
+
+  return `${shortHand}${shortHand.endsWith(': ') ? '' : ': '}${value}`;
 }

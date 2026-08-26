@@ -102,6 +102,7 @@ ThumbnailList.propTypes = {
       description: PropTypes.string,
       componentType: PropTypes.any,
       isTracked: PropTypes.bool,
+      isInteractive: PropTypes.bool,
       /**
        * Data the thumbnail should expose to a receiving drop target. Use a matching
        * `dragData.type` to identify which targets can receive this draggable item.

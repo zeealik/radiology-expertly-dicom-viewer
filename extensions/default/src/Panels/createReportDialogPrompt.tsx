@@ -31,6 +31,7 @@ export default function CreateReportDialogPrompt({
   extensionManager,
   servicesManager,
   enableDownload = false,
+  defaultValue = title,
 }): Promise<{
   value: string;
   dataSourceName: string;
@@ -83,7 +84,7 @@ export default function CreateReportDialogPrompt({
             dataSourceName: undefined,
           });
         },
-        defaultValue: title,
+        defaultValue,
       },
     });
   });

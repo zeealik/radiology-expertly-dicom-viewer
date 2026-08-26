@@ -122,25 +122,12 @@ function getDisplayText(mappedAnnotations, displaySet) {
     return displayText;
   }
 
-  const { SeriesNumber, SOPInstanceUID, frameNumber, text } = mappedAnnotations[0];
-
-  const instance = displaySet.instances.find(image => image.SOPInstanceUID === SOPInstanceUID);
-
-  let InstanceNumber;
-  if (instance) {
-    InstanceNumber = instance.InstanceNumber;
-  }
-
-  const instanceText = InstanceNumber ? ` I: ${InstanceNumber}` : '';
-  const frameText = displaySet.isMultiFrame ? ` F: ${frameNumber}` : '';
+  const { text } = mappedAnnotations[0];
 
   // Add the annotation text to the primary array
   if (text) {
     displayText.primary.push(text);
   }
-
-  // Add the series information to the secondary array
-  displayText.secondary.push(`S: ${SeriesNumber}${instanceText}${frameText}`);
 
   return displayText;
 }

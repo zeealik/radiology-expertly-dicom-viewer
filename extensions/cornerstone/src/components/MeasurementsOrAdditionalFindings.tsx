@@ -11,7 +11,7 @@ export const MeasurementOrAdditionalFindingSets = [
     filter: filterNot(filterAdditionalFindings),
   },
   {
-    title: 'Additional Findings',
+    title: 'Study Findings',
     filter: filterAdditionalFindings,
   },
 ];
@@ -73,6 +73,8 @@ export function MeasurementsOrAdditionalFindings(props): React.ReactNode {
           customHeader={customHeader}
           allItems={items}
           actions={actions}
+          hideDetails={true}
+          jumpFromHeader={true}
         />
       </AccordionGroup.Accordion>
     </AccordionGroup>

@@ -214,7 +214,8 @@ function ViewerLayout({
       await commandsManager.run('promptSaveReport', {
         StudyInstanceUID,
         measurementFilter,
-        defaultSaveTitle: 'Evaluation Finding',
+        defaultSaveTitle: 'Study Findings',
+        skipPrompt: true,
       });
     } catch (error) {
       uiNotificationService?.show({

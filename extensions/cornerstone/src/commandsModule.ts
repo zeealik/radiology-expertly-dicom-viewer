@@ -281,7 +281,7 @@ function commandsModule({
       commandsManager.run('updateStoredPositionPresentation', {
         viewportId: viewportToUpdate.viewportId,
         displaySetInstanceUIDs: [referencedDisplaySetInstanceUID],
-        referencedImageId: measurement.referencedImageId,
+        referencedImageId: measurement.referencedImageId || measurement.metadata?.referencedImageId,
         options: {
           ...measurement.metadata,
         },
@@ -759,9 +759,18 @@ function commandsModule({
       if (!uid) {
         return;
       }
-      measurementService.jumpToMeasurement(viewportGridService.getActiveViewportId(), uid);
+      const measurement = measurementService.getMeasurement(uid);
+      if (measurement) {
+        actions.jumpToMeasurementViewport({
+          annotationUID: uid,
+          measurement,
+        });
+      } else {
+        measurementService.jumpToMeasurement(viewportGridService.getActiveViewportId(), uid);
+      }
       for (const measurement of displayMeasurements) {
         measurement.isActive = measurement.uid === uid;
+        measurement.isSelected = measurement.uid === uid;
       }
     },
 

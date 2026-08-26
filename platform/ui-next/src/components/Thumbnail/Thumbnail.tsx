@@ -30,6 +30,7 @@ const Thumbnail = ({
   isTracked = false,
   canReject = false,
   dragData = {},
+  isInteractive = true,
   onReject = () => {},
   onClickUntrack = () => {},
   ThumbnailMenuItems = () => {},
@@ -41,7 +42,7 @@ const Thumbnail = ({
     type: 'displayset',
     item: { ...dragData },
     canDrag: function (monitor) {
-      return Object.keys(dragData).length !== 0;
+      return isInteractive && Object.keys(dragData).length !== 0;
     },
   });
 
@@ -50,12 +51,30 @@ const Thumbnail = ({
   const handleTouchEnd = e => {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
+    if (!isInteractive) {
+      setLastTap(currentTime);
+      return;
+    }
     if (tapLength < 300 && tapLength > 0) {
       onDoubleClick(e);
     } else {
-      onClick(e);
+      handleClick(e);
     }
     setLastTap(currentTime);
+  };
+
+  const handleClick = e => {
+    if (!isInteractive) {
+      return;
+    }
+    onClick(e);
+  };
+
+  const handleDoubleClick = e => {
+    if (!isInteractive) {
+      return;
+    }
+    onDoubleClick(e);
   };
 
   const renderThumbnailPreset = () => {
@@ -132,11 +151,13 @@ const Thumbnail = ({
             </div>
             {/* bottom right */}
             <div className="absolute bottom-0 right-0 flex items-center gap-[4px] p-[4px]">
-              <ThumbnailMenuItems
-                displaySetInstanceUID={displaySetInstanceUID}
-                canReject={canReject}
-                onReject={onReject}
-              />
+              {isInteractive && (
+                <ThumbnailMenuItems
+                  displaySetInstanceUID={displaySetInstanceUID}
+                  canReject={canReject}
+                  onReject={onReject}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -174,92 +195,96 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full items-center justify-between pr-[8px] pl-[8px] pt-[4px] pb-[4px]',
+          'flex h-full w-full flex-col',
           isActive && 'bg-popover rounded'
         )}
       >
-        <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
-          <div
-            className={classnames(
-              'h-[32px] w-[4px] min-w-[4px] rounded',
-              isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
-              loadingProgress && loadingProgress < 1 && 'bg-primary/25'
-            )}
-          ></div>
-          <div className="flex h-full w-[calc(100%-12px)] flex-col justify-start">
-            <div className="flex items-center gap-[7px]">
-              <div
-                className="text-foreground text-[13px] font-semibold"
-                data-cy="series-modality-label"
-              >
-                {modality}
+        <div className="flex h-[40px] w-full items-center justify-between pr-[8px] pl-[8px] pt-[4px] pb-[4px]">
+          <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
+            <div
+              className={classnames(
+                'h-[32px] w-[4px] min-w-[4px] rounded',
+                isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
+                loadingProgress && loadingProgress < 1 && 'bg-primary/25'
+              )}
+            ></div>
+            <div className="flex h-full w-[calc(100%-12px)] flex-col justify-start">
+              <div className="flex items-center gap-[7px]">
+                <div
+                  className="text-foreground text-[13px] font-semibold"
+                  data-cy="series-modality-label"
+                >
+                  {modality}
+                </div>
+                <Tooltip>
+                  <TooltipContent>{description}</TooltipContent>
+                  <TooltipTrigger className="w-full overflow-hidden">
+                    <div
+                      className="text-foreground max-w-[160px] overflow-hidden overflow-ellipsis whitespace-nowrap text-left text-[13px] font-normal"
+                      data-cy="series-description-label"
+                    >
+                      {description}
+                    </div>
+                  </TooltipTrigger>
+                </Tooltip>
               </div>
-              <Tooltip>
-                <TooltipContent>{description}</TooltipContent>
-                <TooltipTrigger className="w-full overflow-hidden">
-                  <div
-                    className="text-foreground max-w-[160px] overflow-hidden overflow-ellipsis whitespace-nowrap text-left text-[13px] font-normal"
-                    data-cy="series-description-label"
-                  >
-                    {description}
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </div>
 
-            <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
-              <div className="text-muted-foreground text-[12px]"> S:{seriesNumber}</div>
-              <div className="text-muted-foreground text-[12px]">
-                <div className="flex items-center gap-[4px]">
-                  {' '}
-                  {countIcon ? (
-                    React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
-                  ) : (
-                    <Icons.InfoSeries className="w-3" />
-                  )}
-                  <div>{numInstances}</div>
+              <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
+                <div className="text-muted-foreground text-[12px]"> S:{seriesNumber}</div>
+                <div className="text-muted-foreground text-[12px]">
+                  <div className="flex items-center gap-[4px]">
+                    {' '}
+                    {countIcon ? (
+                      React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
+                    ) : (
+                      <Icons.InfoSeries className="w-3" />
+                    )}
+                    <div>{numInstances}</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex h-full items-center gap-[4px]">
-          <DisplaySetMessageListTooltip
-            messages={messages}
-            id={`display-set-tooltip-${displaySetInstanceUID}`}
-          />
-          {isTracked && (
-            <Tooltip>
-              <TooltipTrigger>
-                <div className="group">
-                  <Icons.StatusTracking className="text-highlight h-[20px] w-[15px] group-hover:hidden" />
-                  <Icons.Cancel
-                    className="text-highlight hidden h-[15px] w-[15px] group-hover:block"
-                    onClick={onClickUntrack}
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <div className="flex flex-1 flex-row">
-                  <div className="flex-2 flex items-center justify-center pr-4">
-                    <Icons.InfoLink className="text-primary" />
+          <div className="flex h-full items-center gap-[4px]">
+            <DisplaySetMessageListTooltip
+              messages={messages}
+              id={`display-set-tooltip-${displaySetInstanceUID}`}
+            />
+            {isTracked && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="group">
+                    <Icons.StatusTracking className="text-highlight h-[20px] w-[15px] group-hover:hidden" />
+                    <Icons.Cancel
+                      className="text-highlight hidden h-[15px] w-[15px] group-hover:block"
+                      onClick={onClickUntrack}
+                    />
                   </div>
-                  <div className="flex flex-1 flex-col">
-                    <span>
-                      <span className="text-foreground">
-                        {isTracked ? 'Series is tracked' : 'Series is untracked'}
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div className="flex flex-1 flex-row">
+                    <div className="flex-2 flex items-center justify-center pr-4">
+                      <Icons.InfoLink className="text-primary" />
+                    </div>
+                    <div className="flex flex-1 flex-col">
+                      <span>
+                        <span className="text-foreground">
+                          {isTracked ? 'Series is tracked' : 'Series is untracked'}
+                        </span>
                       </span>
-                    </span>
+                    </div>
                   </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          <ThumbnailMenuItems
-            displaySetInstanceUID={displaySetInstanceUID}
-            canReject={canReject}
-            onReject={onReject}
-          />
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {isInteractive && (
+              <ThumbnailMenuItems
+                displaySetInstanceUID={displaySetInstanceUID}
+                canReject={canReject}
+                onReject={onReject}
+              />
+            )}
+          </div>
         </div>
       </div>
     );
@@ -269,7 +294,8 @@ const Thumbnail = ({
     <div
       className={classnames(
         className,
-        'bg-muted hover:bg-primary/30 group flex cursor-pointer select-none flex-col rounded outline-none',
+        'bg-muted group flex select-none flex-col rounded outline-none',
+        isInteractive ? 'hover:bg-primary/30 cursor-pointer' : 'cursor-default opacity-80',
         viewPreset === 'thumbnails' && 'h-[170px] w-[135px]',
         viewPreset === 'list' && 'h-[40px] w-full'
       )}
@@ -280,10 +306,11 @@ const Thumbnail = ({
           : 'study-browser-thumbnail'
       }
       data-series={seriesNumber}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onTouchEnd={handleTouchEnd}
-      role="button"
+      role={isInteractive ? 'button' : 'presentation'}
+      aria-disabled={!isInteractive}
     >
       <div
         ref={drag}
@@ -324,6 +351,7 @@ Thumbnail.propTypes = {
   modality: PropTypes.string,
   isHydratedForDerivedDisplaySet: PropTypes.bool,
   isTracked: PropTypes.bool,
+  isInteractive: PropTypes.bool,
   onClickUntrack: PropTypes.func,
   countIcon: PropTypes.string,
   thumbnailType: PropTypes.oneOf(['thumbnail', 'thumbnailTracked', 'thumbnailNoImage']),

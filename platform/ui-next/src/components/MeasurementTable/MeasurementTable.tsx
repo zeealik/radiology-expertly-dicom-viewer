@@ -9,6 +9,7 @@ interface MeasurementTableContext {
   onAction?: (e, command: string | string[], uid: string) => void;
   disableEditing?: boolean;
   isExpanded: boolean;
+  hideDetails?: boolean;
 }
 
 const [MeasurementTableProvider, useMeasurementTableContext] =
@@ -17,6 +18,7 @@ const [MeasurementTableProvider, useMeasurementTableContext] =
 interface MeasurementDataProps extends MeasurementTableContext {
   title: string;
   children: React.ReactNode;
+  jumpFromHeader?: boolean;
 }
 
 const MeasurementTable = ({
@@ -26,6 +28,8 @@ const MeasurementTable = ({
   title,
   children,
   disableEditing = false,
+  hideDetails = false,
+  jumpFromHeader = false,
 }: MeasurementDataProps) => {
   const { t } = useTranslation('MeasurementTable');
   const amount = data.length;
@@ -36,11 +40,17 @@ const MeasurementTable = ({
       onAction={onAction}
       isExpanded={isExpanded}
       disableEditing={disableEditing}
+      hideDetails={hideDetails}
     >
       <PanelSection defaultOpen={true}>
         <PanelSection.Header
           key="measurementTableHeader"
           className="bg-popover"
+          onClick={
+            jumpFromHeader && data[0]?.uid
+              ? event => onAction?.(event, 'jumpToMeasurement', data[0].uid)
+              : undefined
+          }
         >
           <span>{`${t(title)} (${amount})`}</span>
         </PanelSection.Header>
@@ -102,7 +112,7 @@ interface RowProps {
 }
 
 const Row = ({ item, index }: RowProps) => {
-  const { onAction, isExpanded, disableEditing } =
+  const { onAction, isExpanded, disableEditing, hideDetails } =
     useMeasurementTableContext('MeasurementTable.Row');
 
   const { uid } = item;
@@ -114,7 +124,7 @@ const Row = ({ item, index }: RowProps) => {
       title={item.label}
       colorHex={item.colorHex}
       isSelected={item.isSelected}
-      details={item.displayText}
+      details={isExpanded && !hideDetails ? item.displayText : undefined}
       onDelete={e => onAction(e, 'removeMeasurement', uid)}
       onSelect={e => onAction(e, 'jumpToMeasurement', uid)}
       onRename={e => onAction(e, 'renameMeasurement', uid)}

@@ -120,7 +120,10 @@ export default function initCornerstoneTools(configuration = {}) {
   // Modify annotation tools to use dashed lines on SR
   const annotationStyle = {
     textBoxFontSize: '15px',
-    lineWidth: '1.5',
+    lineWidth: '3',
+    lineDash: '',
+    textBoxLinkLineWidth: '0',
+    textBoxLinkLineDash: '',
   };
 
   const defaultStyles = annotation.config.style.getDefaultToolStyles();
@@ -128,6 +131,13 @@ export default function initCornerstoneTools(configuration = {}) {
     global: {
       ...defaultStyles.global,
       ...annotationStyle,
+    },
+    ArrowAnnotate: {
+      ...defaultStyles.ArrowAnnotate,
+      lineWidth: '3',
+      lineDash: '',
+      textBoxLinkLineWidth: '0',
+      textBoxLinkLineDash: '',
     },
   });
 }

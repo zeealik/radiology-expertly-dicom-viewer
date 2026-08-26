@@ -78,11 +78,18 @@ export default function PanelStudyBrowserTracking({
   ) => {
     const thumbnailDisplaySets = [];
     const thumbnailNoImageDisplaySets = [];
+    const visibleStudyFindingUIDs = getVisibleStudyFindingUIDs(displaySets);
+
     displaySets
-      .filter(ds => !ds.excludeFromThumbnailBrowser)
+      .filter(
+        ds =>
+          !ds.excludeFromThumbnailBrowser &&
+          (!isStudyFindingDisplaySet(ds) || visibleStudyFindingUIDs.has(ds.displaySetInstanceUID))
+      )
       .forEach(ds => {
         const { thumbnailSrc, displaySetInstanceUID } = ds;
         const componentType = getComponentType(ds);
+        const isStudyFinding = isStudyFindingDisplaySet(ds);
 
         const array =
           componentType === 'thumbnailTracked' ? thumbnailDisplaySets : thumbnailNoImageDisplaySets;
@@ -102,10 +109,13 @@ export default function PanelStudyBrowserTracking({
           StudyInstanceUID: ds.StudyInstanceUID,
           componentType,
           imageSrc: thumbnailSrc || thumbnailImageSrcMap[displaySetInstanceUID],
-          dragData: {
-            type: 'displayset',
-            displaySetInstanceUID,
-          },
+          dragData: isStudyFinding
+            ? undefined
+            : {
+                type: 'displayset',
+                displaySetInstanceUID,
+              },
+          isInteractive: !isStudyFinding,
           isTracked: trackedSeries.includes(ds.SeriesInstanceUID),
           isHydratedForDerivedDisplaySet: ds.isHydrated,
         });
@@ -137,6 +147,26 @@ export default function PanelStudyBrowserTracking({
       onDoubleClickThumbnailHandlerCallBack={checkDirtyMeasurements}
     />
   );
+}
+
+function isStudyFindingDisplaySet(displaySet) {
+  return displaySet?.Modality === 'SR' && displaySet?.SeriesDescription === 'Study Findings';
+}
+
+function getVisibleStudyFindingUIDs(displaySets) {
+  const visibleUIDsByGroup = new Map();
+
+  for (const displaySet of displaySets) {
+    if (isStudyFindingDisplaySet(displaySet)) {
+      visibleUIDsByGroup.set(getStudyFindingGroupKey(displaySet), displaySet.displaySetInstanceUID);
+    }
+  }
+
+  return new Set(visibleUIDsByGroup.values());
+}
+
+function getStudyFindingGroupKey(displaySet) {
+  return `${displaySet.StudyInstanceUID}:${displaySet.SeriesDescription}`;
 }
 
 PanelStudyBrowserTracking.propTypes = {

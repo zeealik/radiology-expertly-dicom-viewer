@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { ViewportActionArrows } from '@ohif/ui-next';
@@ -12,7 +12,7 @@ import { useSystem } from '@ohif/core';
 function TrackedCornerstoneViewport(
   props: withAppTypes<{ viewportId: string; displaySets: AppTypes.DisplaySet[] }>
 ) {
-  const { servicesManager } = useSystem();
+  const { servicesManager, commandsManager } = useSystem();
   const { displaySets, viewportId } = props as {
     displaySets: AppTypes.DisplaySet[];
     viewportId: string;
@@ -29,6 +29,7 @@ function TrackedCornerstoneViewport(
   const [isTracked, setIsTracked] = useState(false);
   const [trackedMeasurementUID, setTrackedMeasurementUID] = useState(null);
   const [viewportElem, setViewportElem] = useState(null);
+  const autoSavedMeasurementUIDsRef = useRef(new Set<string>());
 
   const { trackedSeries } = trackedMeasurements.context;
 
@@ -85,6 +86,15 @@ function TrackedCornerstoneViewport(
         },
         global: {
           lineDash: '',
+          lineWidth: '3',
+          textBoxLinkLineWidth: '0',
+          textBoxLinkLineDash: '',
+        },
+        ArrowAnnotate: {
+          lineDash: '',
+          lineWidth: '3',
+          textBoxLinkLineWidth: '0',
+          textBoxLinkLineDash: '',
         },
       });
 
@@ -95,7 +105,16 @@ function TrackedCornerstoneViewport(
 
     annotation.config.style.setViewportToolStyles(viewportId, {
       global: {
-        lineDash: '4,4',
+        lineDash: '',
+        lineWidth: '3',
+        textBoxLinkLineWidth: '0',
+        textBoxLinkLineDash: '',
+      },
+      ArrowAnnotate: {
+        lineDash: '',
+        lineWidth: '3',
+        textBoxLinkLineWidth: '0',
+        textBoxLinkLineDash: '',
       },
     });
 
@@ -142,6 +161,20 @@ function TrackedCornerstoneViewport(
               measurementId,
               toolName,
             });
+            if (
+              StudyInstanceUID &&
+              measurementId &&
+              !autoSavedMeasurementUIDsRef.current.has(measurementId)
+            ) {
+              autoSavedMeasurementUIDsRef.current.add(measurementId);
+              commandsManager.run('promptSaveReport', {
+                StudyInstanceUID,
+                measurementFilter: (measurement: { referenceStudyUID?: string }) =>
+                  measurement?.referenceStudyUID === StudyInstanceUID,
+                defaultSaveTitle: 'Study Findings',
+                skipPrompt: true,
+              });
+            }
           }
         }).unsubscribe
       );
@@ -152,7 +185,13 @@ function TrackedCornerstoneViewport(
         unsub();
       });
     };
-  }, [measurementService, sendTrackedMeasurementsEvent, viewportId, viewportGridService]);
+  }, [
+    commandsManager,
+    measurementService,
+    sendTrackedMeasurementsEvent,
+    viewportId,
+    viewportGridService,
+  ]);
 
   const switchMeasurement = useCallback(
     direction => {

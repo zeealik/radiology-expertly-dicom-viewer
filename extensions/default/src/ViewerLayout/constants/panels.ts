@@ -5,9 +5,9 @@ const collapsedWidth = 25;
 
 const getPanelGroupDefinition = ({
   leftPanelInitialExpandedWidth = 282,
-  rightPanelInitialExpandedWidth = 280,
+  rightPanelInitialExpandedWidth = 360,
   leftPanelMinimumExpandedWidth = 145,
-  rightPanelMinimumExpandedWidth = 280,
+  rightPanelMinimumExpandedWidth = 360,
 }) => {
   return {
     groupId: 'viewerLayoutResizablePanelGroup',

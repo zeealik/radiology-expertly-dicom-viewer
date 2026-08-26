@@ -8,7 +8,7 @@ import { isReadOnlyViewerAccess } from '@ohif/extension-default/src/ViewerLayout
  * the accordion groups.
  */
 export default function MeasurementTableNested(props) {
-  const { title, items, group, customHeader } = props;
+  const { title, items, group, customHeader, hideDetails = false, jumpFromHeader = false } = props;
   const { commandsManager } = useSystem();
   // In a read-only viewer the findings are reference material, so rename/delete
   // are suppressed on every row. Selecting a row still jumps to the measurement.
@@ -17,7 +17,11 @@ export default function MeasurementTableNested(props) {
     if (disableEditing && command !== 'jumpToMeasurement') {
       return;
     }
-    commandsManager.run(command, { uid, annotationUID: uid, displayMeasurements: items });
+    commandsManager.run(command, {
+      uid,
+      annotationUID: uid,
+      displayMeasurements: props.allItems || items,
+    });
   };
 
   return (
@@ -27,6 +31,8 @@ export default function MeasurementTableNested(props) {
       onAction={onAction}
       {...group}
       disableEditing={disableEditing}
+      hideDetails={hideDetails}
+      jumpFromHeader={jumpFromHeader}
       key={group.key}
     >
       <MeasurementTable.Header key="measurementTableHeader">

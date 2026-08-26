@@ -11,9 +11,11 @@ type DataSource = {
 };
 
 type ReportDialogProps = {
-  dataSources: DataSource[];
+  dataSources?: DataSource[];
   modality?: string;
   predecessorImageId?: string;
+  defaultValue?: string;
+  minSeriesNumber?: number;
   hide: () => void;
   onSave: (data: {
     reportName: string;
@@ -26,9 +28,10 @@ type ReportDialogProps = {
 };
 
 function ReportDialog({
-  dataSources,
+  dataSources = [],
   modality = 'SR',
   predecessorImageId,
+  defaultValue = 'Study Findings',
   minSeriesNumber = 3000,
   hide,
   onSave,
@@ -44,7 +47,7 @@ function ReportDialog({
   const { displaySetService } = servicesManager.services;
 
   const [selectedSeries, setSelectedSeries] = useState<string | null>(predecessorImageId || null);
-  const [reportName, setReportName] = useState('');
+  const [reportName, setReportName] = useState(defaultValue);
 
   const seriesOptions = useMemo(() => {
     const displaySetsMap = displaySetService.getDisplaySetCache();
@@ -67,14 +70,14 @@ function ReportDialog({
       },
       ...options,
     ];
-  }, [displaySetService, modality]);
+  }, [displaySetService, minSeriesNumber, modality]);
 
   useEffect(() => {
     const seriesOption = seriesOptions.find(s => s.value === selectedSeries);
     const newReportName =
-      selectedSeries && seriesOption?.description ? seriesOption.description : '';
+      selectedSeries && seriesOption?.description ? seriesOption.description : defaultValue;
     setReportName(newReportName);
-  }, [selectedSeries, seriesOptions]);
+  }, [defaultValue, selectedSeries, seriesOptions]);
 
   const handleSave = useCallback(() => {
     actionTakenRef.current = true;
@@ -85,7 +88,7 @@ function ReportDialog({
       series: selectedSeries,
     });
     hide();
-  }, [selectedDataSource, selectedSeries, reportName, hide, onSave]);
+  }, [hide, onSave, reportName, selectedDataSource, selectedSeries, seriesOptions]);
 
   const handleCancel = useCallback(() => {
     actionTakenRef.current = true;
@@ -102,7 +105,7 @@ function ReportDialog({
       series: selectedSeries,
     });
     hide();
-  }, [selectedDataSource, selectedSeries, reportName, hide, onSave]);
+  }, [hide, onSave, reportName, selectedSeries, seriesOptions]);
 
   // Handles the close dialog button/external close as a cancel
   useEffect(() => {
@@ -117,7 +120,7 @@ function ReportDialog({
   const showDownloadButton = enableDownload;
 
   return (
-    <div className="text-foreground flex min-w-[400px] max-w-md flex-col">
+    <div className="text-foreground flex w-[min(640px,calc(100vw-48px))] flex-col">
       <div className="flex flex-col gap-4">
         <div className="flex gap-4">
           {showDataSourceSelect && (
@@ -167,9 +170,9 @@ function ReportDialog({
             </>
           )}
         </div>
-        <div className="flex items-end gap-4">
+        <div className="grid grid-cols-[minmax(220px,0.9fr)_minmax(280px,1.1fr)] items-end gap-4">
           {!showDataSourceSelect && (
-            <div className="w-1/3">
+            <div className="min-w-0">
               <div className="mb-1 pl-1 text-base">Series</div>
               <Select
                 value={selectedSeries}
