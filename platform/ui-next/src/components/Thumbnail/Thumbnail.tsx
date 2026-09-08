@@ -82,16 +82,16 @@ const Thumbnail = ({
       <div
         className={classnames(
           'flex h-full w-full flex-col items-center justify-center gap-[2px] p-[4px]',
-          isActive && 'bg-popover rounded'
+          isActive && 'bg-popover ring-primary rounded ring-2'
         )}
       >
         <div className="h-[114px] w-[128px]">
-          <div className="relative bg-background">
+          <div className="bg-background relative">
             {imageSrc ? (
               <img
                 src={imageSrc}
                 alt={imageAltText}
-                className="h-[114px] w-[128px] rounded object-contain"
+                className="h-[114px] w-[128px] rounded object-contain outline outline-1 -outline-offset-1 outline-white/10"
                 crossOrigin="anonymous"
               />
             ) : (
@@ -193,12 +193,7 @@ const Thumbnail = ({
 
   const renderListPreset = () => {
     return (
-      <div
-        className={classnames(
-          'flex h-full w-full flex-col',
-          isActive && 'bg-popover rounded'
-        )}
-      >
+      <div className={classnames('flex h-full w-full flex-col', isActive && 'bg-popover rounded')}>
         <div className="flex h-[40px] w-full items-center justify-between pr-[8px] pl-[8px] pt-[4px] pb-[4px]">
           <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
             <div
@@ -235,7 +230,9 @@ const Thumbnail = ({
                   <div className="flex items-center gap-[4px]">
                     {' '}
                     {countIcon ? (
-                      React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
+                      React.createElement(Icons[countIcon] || Icons.MissingIcon, {
+                        className: 'w-3',
+                      })
                     ) : (
                       <Icons.InfoSeries className="w-3" />
                     )}

@@ -51,8 +51,8 @@ export const PanelSection: React.FC<PanelSectionProps> & {
 PanelSection.Header = ({ children, className, onClick }) => (
   <AccordionTrigger
     className={cn(
-      'bg-popover hover:bg-accent text-muted-foreground',
-      'my-0.5 flex h-7 w-full items-center justify-between rounded py-2 pr-1 pl-2.5 text-[13px]',
+      'bg-muted/60 hover:bg-muted text-foreground data-[state=open]:bg-muted',
+      'my-0.5 flex h-8 w-full items-center justify-between rounded py-2 pr-1.5 pl-2.5 text-xs font-medium tracking-wide',
       className
     )}
     onClick={event => {

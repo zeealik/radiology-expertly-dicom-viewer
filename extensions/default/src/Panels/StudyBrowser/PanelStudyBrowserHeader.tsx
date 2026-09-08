@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@ohif/ui-next';
+import { Button, ToggleGroup, ToggleGroupItem } from '@ohif/ui-next';
 import { Icons } from '@ohif/ui-next';
 import { actionIcon, viewPreset } from './types';
 
@@ -14,48 +14,48 @@ function PanelStudyBrowserHeader({
   actionIcons: actionIcon[];
   updateActionIconValue: (actionIcon: actionIcon) => void;
 }) {
-  // Button order: Settings button then List view mode (thumbnails vs. list)
+  // Button order: action icons on the left, view-preset toggle on the right.
   return (
-    <>
-      <div className="bg-muted flex h-[40px] select-none rounded-t p-2">
-        <div className={'flex h-[24px] w-full select-none justify-center self-center text-[14px]'}>
-          <div className="flex w-full items-center gap-[10px]">
-            <div className="flex items-center justify-center">
-              <div className="text-primary flex items-center space-x-1">
-                {actionIcons.map((icon: actionIcon, index) =>
-                  React.createElement(Icons[icon.iconName] || Icons.MissingIcon, {
-                    key: index,
-                    onClick: () => updateActionIconValue(icon),
-                    className: `cursor-pointer`,
-                  })
-                )}
-              </div>
-            </div>
-            <div className="ml-auto flex h-full items-center justify-center">
-              <ToggleGroup
-                type="single"
-                value={viewPresets.filter(preset => preset.selected)[0].id}
-                onValueChange={value => {
-                  const selectedViewPreset = viewPresets.find(preset => preset.id === value);
-                  updateViewPresetValue(selectedViewPreset);
-                }}
-              >
-                {viewPresets.map((viewPreset: viewPreset, index) => (
-                  <ToggleGroupItem
-                    key={index}
-                    aria-label={viewPreset.id}
-                    value={viewPreset.id}
-                    className="text-primary"
-                  >
-                    {React.createElement(Icons[viewPreset.iconName] || Icons.MissingIcon)}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-          </div>
-        </div>
+    <div className="bg-muted border-border flex h-9 shrink-0 select-none items-center justify-between gap-2 rounded-t border-b px-2">
+      <div className="flex items-center gap-0.5">
+        {actionIcons.map((icon: actionIcon, index) => (
+          <Button
+            key={index}
+            variant="ghost"
+            size="icon"
+            aria-label={icon.id}
+            title={icon.id}
+            className="text-muted-foreground hover:text-foreground h-7 w-7"
+            onClick={() => updateActionIconValue(icon)}
+          >
+            {React.createElement(Icons[icon.iconName] || Icons.MissingIcon, {
+              className: 'h-4 w-4',
+            })}
+          </Button>
+        ))}
       </div>
-    </>
+      <ToggleGroup
+        type="single"
+        value={viewPresets.filter(preset => preset.selected)[0].id}
+        onValueChange={value => {
+          const selectedViewPreset = viewPresets.find(preset => preset.id === value);
+          updateViewPresetValue(selectedViewPreset);
+        }}
+      >
+        {viewPresets.map((viewPreset: viewPreset, index) => (
+          <ToggleGroupItem
+            key={index}
+            aria-label={viewPreset.id}
+            value={viewPreset.id}
+            className="text-muted-foreground data-[state=on]:text-foreground h-7 w-7"
+          >
+            {React.createElement(Icons[viewPreset.iconName] || Icons.MissingIcon, {
+              className: 'h-4 w-4',
+            })}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   );
 }
 

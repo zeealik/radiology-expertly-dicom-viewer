@@ -33,7 +33,7 @@ export const ToolLayout = (props: IconProps) => (
           id="Group-3"
           transform="translate(0, 0)"
           stroke="currentColor"
-          strokeWidth="1.25"
+          strokeWidth="1.5"
         >
           <path
             d="M5.45696821e-12,9.49450549 L5.45696821e-12,17.3947362 C5.45710348e-12,18.4993057 0.8954305,19.3947362 2,19.3947362 L13.2443085,19.3947362 L13.2443085,19.3947362"
@@ -76,9 +76,9 @@ export const ToolLayout = (props: IconProps) => (
         <g
           id="gear"
           transform="translate(21.0876, 17.2796) rotate(-20) translate(-21.0876, -17.2796)translate(15.9634, 11.5127)"
-          stroke="#348CFD"
+          stroke="currentColor"
           strokeLinejoin="round"
-          strokeWidth="1.25"
+          strokeWidth="1.5"
         >
           <circle
             id="Oval"
@@ -518,7 +518,7 @@ export const ToolCalibrate = (props: IconProps) => (
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="1.25"
+        strokeWidth="1.5"
       >
         <polyline
           id="Path"
@@ -539,7 +539,7 @@ export const ToolCalibrate = (props: IconProps) => (
       <rect
         id="Rectangle"
         stroke="currentColor"
-        strokeWidth="1.25"
+        strokeWidth="1.5"
         x="2"
         y="5"
         width="24"
@@ -817,7 +817,7 @@ export const ToolCreateThreshold = (props: IconProps) => (
       <polyline
         id="Path-3"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         points="18.85656 16.2174437 21.3536565 13.7203472 23.850753 16.2174437"
@@ -825,7 +825,7 @@ export const ToolCreateThreshold = (props: IconProps) => (
       <polyline
         id="Path-3"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         transform="translate(21.353657, 21.471076) scale(1, -1) translate(-21.353657, -21.471076) "
@@ -1596,7 +1596,7 @@ export const ToolFusionColor = (props: IconProps) => (
         d="M18,2 C19.1045695,2 20,2.8954305 20,4 L20.000443,11.5700239 C18.8210504,10.0206853 17.6279451,8.77097591 17.1182222,8.25530435 C16.9570959,8.09231818 16.733654,8.00006956 16.5,8.00006956 C16.266346,8.00006956 16.0429041,8.09231818 15.8817778,8.25530435 C14.719,9.43165217 10,14.4278261 10,18.0869565 C10,18.7674866 10.1126915,19.4091677 10.3210825,20.0009348 L4,20 C2.8954305,20 2,19.1045695 2,18 L2,4 C2,2.8954305 2.8954305,2 4,2 L18,2 Z"
         id="Combined-Shape"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="1.5"
       ></path>
       <g
         id="color-drop-pick"
@@ -1608,7 +1608,7 @@ export const ToolFusionColor = (props: IconProps) => (
         <path
           d="M7.52683573,0.255234787 C7.36570938,0.0922486197 7.14226748,0 6.90861351,0 C6.67495954,0 6.45151764,0.0922486197 6.29039129,0.255234787 C5.12761351,1.43158261 0.408613509,6.42775653 0.408613509,10.086887 C0.408613509,13.5449739 3.31844684,15.9999304 6.90861351,15.9999304 C10.4987802,15.9999304 13.4086135,13.5449739 13.4086135,10.086887 C13.4086135,6.42775653 8.68961351,1.43158261 7.52683573,0.255234787 Z"
           id="Path"
-          strokeWidth="1.75"
+          strokeWidth="1.5"
         ></path>
         <g
           id="Group"
@@ -1720,7 +1720,7 @@ export const ToolLayoutDefault = (props: IconProps) => (
           id="Group-3"
           transform="translate(0, 0)"
           stroke="currentColor"
-          strokeWidth="1.25"
+          strokeWidth="1.5"
         >
           <path
             d="M5.45696821e-12,9.49450549 L5.45696821e-12,17.3947362 C5.45710348e-12,18.4993057 0.8954305,19.3947362 2,19.3947362 L13.2443085,19.3947362 L13.2443085,19.3947362"
@@ -1763,9 +1763,9 @@ export const ToolLayoutDefault = (props: IconProps) => (
         <g
           id="gear"
           transform="translate(21.0876, 17.2796) rotate(-20) translate(-21.0876, -17.2796)translate(15.9634, 11.5127)"
-          stroke="#348CFD"
+          stroke="currentColor"
           strokeLinejoin="round"
-          strokeWidth="1.25"
+          strokeWidth="1.5"
         >
           <circle
             id="Oval"
@@ -2241,7 +2241,7 @@ export const ToolRectangle = (props: IconProps) => (
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="1.65"
+        strokeWidth="1.5"
       >
         <line
           x1="3.78787879"
@@ -2887,7 +2887,7 @@ export const ToolToggleDicomOverlay = (props: IconProps) => (
         d="M6.1678365,9.125 L5.5,9.125 C4.3954305,9.125 3.5,10.0204305 3.5,11.125 L3.5,22.125 C3.5,23.2295695 4.3954305,24.125 5.5,24.125 L16.5,24.125 C17.6045695,24.125 18.5,23.2295695 18.5,22.125 L18.5,21.9543874 L18.5,21.9543874"
         id="Path-9"
         stroke="currentColor"
-        strokeWidth="1.25"
+        strokeWidth="1.5"
         strokeLinecap="round"
       ></path>
     </g>
@@ -2992,14 +2992,14 @@ export const ToolSegmentLabel = (props: IconProps) => (
     <path
       d="M2.6636 14.3578C2.58841 14.4105 2.53094 14.4847 2.49878 14.5707C2.46661 14.6567 2.46127 14.7504 2.48345 14.8395C2.50564 14.9286 2.5543 15.0088 2.62302 15.0697C2.69175 15.1305 2.77731 15.1691 2.86842 15.1804L7.42867 16.5722L8.82125 21.1316C8.83209 21.2229 8.87047 21.3088 8.93131 21.3779C8.99214 21.4469 9.07254 21.4958 9.16181 21.518C9.25109 21.5402 9.34502 21.5348 9.43111 21.5023C9.5172 21.4699 9.59139 21.412 9.6438 21.3364L20.4127 10.5683C20.7607 10.1801 20.9661 9.68484 20.9951 9.16423L21 3.82256C21 3.6044 20.9133 3.39518 20.7591 3.24092C20.6048 3.08666 20.3956 3 20.1774 3H14.8382C14.3176 3.02823 13.8223 3.2334 13.4341 3.58155L2.6636 14.3578Z"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M16.8882 8.75787C15.9796 8.75787 15.2431 8.02133 15.2431 7.11276C15.2431 6.20419 15.9796 5.46765 16.8882 5.46765C17.7968 5.46765 18.5333 6.20419 18.5333 7.11276C18.5333 8.02133 17.7968 8.75787 16.8882 8.75787Z"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />

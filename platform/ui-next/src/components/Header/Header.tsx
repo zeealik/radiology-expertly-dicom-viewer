@@ -65,12 +65,12 @@ function Header({
               {isReturnEnabled && (
                 <button
                   type="button"
-                  className="text-primary hover:bg-muted focus-visible:ring-ring flex h-12 w-14 flex-none cursor-pointer items-center justify-center rounded focus-visible:outline-none focus-visible:ring-1 md:w-[72px]"
+                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-10 w-12 flex-none cursor-pointer items-center justify-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 md:w-14"
                   onClick={onClickReturn}
                   aria-label="Return to work list"
                   data-cy="return-to-work-list"
                 >
-                  <Icons.ArrowLeftBold className="h-10 w-10" />
+                  <Icons.ArrowLeftBold className="h-5 w-5" />
                 </button>
               )}
               <div className="ml-1 flex h-10 w-8 flex-none items-center overflow-hidden md:ml-2 [&_svg]:max-w-none [&_svg]:shrink-0">
@@ -86,16 +86,16 @@ function Header({
           </div>
           <div className="flex flex-none select-none items-center">
             {UndoRedo}
-            <div className="border-muted mx-0.5 h-[25px] border-r md:mx-1.5"></div>
+            <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
             {PatientInfo}
-            <div className="border-muted mx-0.5 h-[25px] border-r md:mx-1.5"></div>
+            <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
             <div className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-primary hover:bg-muted mt-2 h-full w-full"
+                    className="text-muted-foreground hover:bg-accent hover:text-foreground h-10 w-10 rounded-lg transition-colors duration-150"
                   >
                     <Icons.GearSettings />
                   </Button>

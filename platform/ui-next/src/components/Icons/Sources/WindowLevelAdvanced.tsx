@@ -13,7 +13,7 @@ export const WindowLevelAdvanced = (props: IconProps) => (
     <path
       d="M16.8555 8.05566L7.85547 17.0557"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path

@@ -13,21 +13,21 @@ export const OrientationSwitch = (props: IconProps) => (
     <path
       d="M8.07778 16.4182L9.96563 18.8288L7.30469 20.4557"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M20.0917 14C20.3502 14.1669 20.5669 14.3909 20.7252 14.6547C20.8835 14.9186 20.9792 15.2152 21.0048 15.5218C21.0048 17.3123 17.4909 18.7938 13.0151 18.946"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M9.96782 18.828C6.23931 18.4354 3.5 17.1038 3.5 15.5218C3.52464 15.2179 3.61841 14.9236 3.77416 14.6614C3.9299 14.3992 4.1435 14.1761 4.39865 14.0091"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />

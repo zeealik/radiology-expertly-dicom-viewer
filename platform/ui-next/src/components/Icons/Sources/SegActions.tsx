@@ -57,7 +57,7 @@ export const ActionsSimplify = (props: IconProps) => (
     <path
       d="M17.2614 24.6405C17.1954 24.9075 17.0614 24.9155 16.9614 24.6585L13.0334 14.3235C12.9334 14.0665 13.0664 13.9355 13.3234 14.0315L23.7014 17.9235C23.9584 18.0235 23.9514 18.1535 23.6844 18.2235L18.5124 19.5165L17.2614 24.6405Z"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -538,31 +538,31 @@ export const ActionsInterpolate = (props: IconProps) => (
     <path
       d="M7 14.75H21"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M10.5 6H17.5"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M10.5 22.625H17.5"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M12.25 10.375H15.75"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M12.25 18.25H15.75"
       stroke="currentColor"
-      strokeWidth="1.2"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
   </svg>

@@ -37,14 +37,14 @@ export const TabStudies = (props: IconProps) => (
             d="M6.93478261,15.0652174 L3.23913043,15.0652174 C2.83091997,15.0652174 2.5,14.7342974 2.5,14.326087 L2.5,3.23913043 C2.5,2.83091997 2.83091997,2.5 3.23913043,2.5 L14.326087,2.5 C14.7342974,2.5 15.0652174,2.83091997 15.0652174,3.23913043 L15.0652174,6.93478261"
             id="Path"
             stroke="currentColor"
-            strokeWidth="1.25"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           ></path>
           <rect
             id="Rectangle"
             stroke="currentColor"
-            strokeWidth="1.25"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             x="6.93478261"

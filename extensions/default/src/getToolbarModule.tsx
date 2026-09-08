@@ -10,6 +10,7 @@ import ToolButtonListWrapper from './Toolbar/ToolButtonListWrapper';
 import ToolRowWrapper from './Toolbar/ToolRowWrapper';
 import { ToolBoxButtonGroupWrapper, ToolBoxButtonWrapper } from './Toolbar/ToolBoxWrapper';
 import { ToolButtonWrapper } from './Toolbar/ToolButtonWrapper';
+import ToolbarDivider from './Toolbar/ToolbarDivider';
 import { Toolbar } from './Toolbar';
 
 export default function getToolbarModule({ commandsManager, servicesManager }: withAppTypes) {
@@ -35,6 +36,10 @@ export default function getToolbarModule({ commandsManager, servicesManager }: w
     {
       name: 'ohif.toolBoxButton',
       defaultComponent: ToolBoxButtonWrapper,
+    },
+    {
+      name: 'ohif.divider',
+      defaultComponent: ToolbarDivider,
     },
     // others
     {

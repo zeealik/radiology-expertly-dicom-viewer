@@ -214,7 +214,18 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 }
 
 export const toolbarSections = {
-  [TOOLBAR_SECTIONS.primary]: ['StackScroll', 'WindowLevel', 'Pan', 'Zoom', 'Layout', 'MoreTools'],
+  // Grouped so the run reads as navigate | manipulate | layout & overflow
+  // rather than one undifferentiated row of buttons.
+  [TOOLBAR_SECTIONS.primary]: [
+    'StackScroll',
+    'primaryDivider1',
+    'WindowLevel',
+    'Pan',
+    'Zoom',
+    'primaryDivider2',
+    'Layout',
+    'MoreTools',
+  ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: ['orientationMenu', 'dataOverlayMenu'],
 

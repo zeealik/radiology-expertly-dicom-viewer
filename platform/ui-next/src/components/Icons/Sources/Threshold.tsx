@@ -13,19 +13,19 @@ export const Threshold = (props: IconProps) => (
     <path
       d="M18 17L15 17"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M13 17H6"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path
       d="M13 19L13 15"
       stroke="currentColor"
-      strokeWidth="1.25"
+      strokeWidth="1.5"
       strokeLinecap="round"
     />
     <path

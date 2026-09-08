@@ -21,6 +21,17 @@ export const setToolActiveToolbar = {
 };
 
 const toolbarButtons: Button[] = [
+  // group separators for the primary toolbar
+  {
+    id: 'primaryDivider1',
+    uiType: 'ohif.divider',
+    props: {},
+  },
+  {
+    id: 'primaryDivider2',
+    uiType: 'ohif.divider',
+    props: {},
+  },
   // sections
   {
     id: 'MeasurementTools',

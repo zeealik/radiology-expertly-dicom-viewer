@@ -5,11 +5,14 @@ import { Button } from '../Button';
 import { cn } from '../../lib/utils';
 import { useIconPresentation } from '../../contextProviders/IconPresentationProvider';
 
-const baseClasses = '!rounded-lg inline-flex items-center justify-center';
-const defaultClasses = 'bg-transparent text-foreground/80 hover:bg-background hover:text-highlight';
-const activeClasses = 'bg-highlight text-background hover:!bg-highlight/80';
-const disabledClasses =
-  'text-foreground hover:bg-muted hover:text-highlight opacity-40 cursor-not-allowed';
+const baseClasses =
+  'rounded-lg inline-flex items-center justify-center transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100';
+// Inactive tools sit back at muted weight so the single active tool — and the
+// image itself — carry the eye. Hover lifts to full foreground, not to accent:
+// accent is reserved for state, not for pointer feedback.
+const defaultClasses = 'bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground';
+const activeClasses = 'bg-highlight text-primary-foreground hover:bg-highlight/90';
+const disabledClasses = 'text-muted-foreground opacity-40 cursor-not-allowed';
 
 const sizeClasses = {
   default: {

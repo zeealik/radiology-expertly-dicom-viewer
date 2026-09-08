@@ -61,7 +61,7 @@ export const IconColorLUT = (props: IconProps) => (
               stroke="#041C4A"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="1.25"
+              strokeWidth="1.5"
             >
               <line
                 x1="0.5"

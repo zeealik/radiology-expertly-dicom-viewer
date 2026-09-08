@@ -66,41 +66,46 @@
     --error-text: hsl(0, 84%, 45%);
   }
 
+  /* Dark theme — the viewer's real surface.
+     Surfaces form a deliberate elevation ladder so the scan stays the brightest
+     thing on screen: background (viewport floor) < card (panels) < popover
+     (header, menus) < muted (panel headers, hover) < accent (active rows).
+     Borders sit just above `muted` so dividers read as structure, not as rules. */
   .dark {
-    --background: 220 13% 18%;
+    --background: 222 14% 11%;
     --foreground: 220 9% 85%;
-    --card: 220 13% 22%;
+    --card: 222 13% 15%;
     --card-foreground: 220 9% 85%;
-    --popover: 220 13% 22%;
+    --popover: 222 13% 17%;
     --popover-foreground: 220 9% 85%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 220 13% 18%;
-    --secondary: 220 13% 25%;
+    --primary: 201 92% 52%;
+    --primary-foreground: 222 14% 11%;
+    --secondary: 222 12% 21%;
     --secondary-foreground: 220 9% 85%;
-    --muted: 220 13% 25%;
-    --muted-foreground: 220 9% 65%;
-    --accent: 220 13% 25%;
+    --muted: 222 12% 21%;
+    --muted-foreground: 220 9% 62%;
+    --accent: 222 12% 24%;
     --accent-foreground: 220 9% 85%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 220 13% 18%;
-    --border: 220 13% 35%;
-    --input: 220 13% 35%;
-    --ring: 199 89% 48%;
+    --destructive-foreground: 222 14% 11%;
+    --border: 222 12% 24%;
+    --input: 222 12% 24%;
+    --ring: 201 92% 52%;
 
-    --form-background: 220 13% 22%;
-    --form-border: 220 13% 35%;
+    --form-background: 222 13% 15%;
+    --form-border: 222 12% 24%;
     --form-text: 220 9% 85%;
-    --form-text-muted: 220 9% 65%;
-    --form-input-background: 220 13% 18%;
-    --form-input-border: 220 13% 35%;
-    --form-input-focus: 199 89% 48%;
+    --form-text-muted: 220 9% 62%;
+    --form-input-background: 222 14% 11%;
+    --form-input-border: 222 12% 24%;
+    --form-input-focus: 201 92% 52%;
 
-    --highlight: 199 89% 48%;
-    --neutral: 220 9% 65%;
+    --highlight: 201 92% 52%;
+    --neutral: 220 9% 62%;
     --neutral-light: 220 9% 85%;
-    --neutral-dark: 220 13% 35%;
+    --neutral-dark: 222 12% 24%;
 
-    --chart-1: 199 89% 48%;
+    --chart-1: 201 92% 52%;
     --chart-2: 199 89% 60%;
     --chart-3: 215 70% 55%;
     --chart-4: 190 70% 45%;
