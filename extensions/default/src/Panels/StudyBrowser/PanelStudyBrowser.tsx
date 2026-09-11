@@ -24,6 +24,9 @@ function PanelStudyBrowser({
   customMapDisplaySets,
   onClickUntrack,
   onDoubleClickThumbnailHandlerCallBack,
+  // Lets a panel replace the study row's `...` menu with its own affordance (e.g. a
+  // visible "Open study" button) instead of the default dropdown.
+  StudyMenuItems: StudyMenuItemsProp,
 }) {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
   const { displaySetService, customizationService } = servicesManager.services;
@@ -435,11 +438,14 @@ function PanelStudyBrowser({
           servicesManager,
           menuItemsKey: 'studyBrowser.thumbnailMenuItems',
         })}
-        StudyMenuItems={MoreDropdownMenu({
-          commandsManager,
-          servicesManager,
-          menuItemsKey: 'studyBrowser.studyMenuItems',
-        })}
+        StudyMenuItems={
+          StudyMenuItemsProp ??
+          MoreDropdownMenu({
+            commandsManager,
+            servicesManager,
+            menuItemsKey: 'studyBrowser.studyMenuItems',
+          })
+        }
       />
     </>
   );

@@ -5,7 +5,7 @@ import { Enums } from '@cornerstonejs/core';
 
 import { Button, Icons, InvestigationalUseDialog } from '@ohif/ui-next';
 import { HangingProtocolService, CommandsManager } from '@ohif/core';
-import { PanelMeasurement } from '@ohif/extension-cornerstone';
+import { PanelSliceMeasurement } from '@ohif/extension-cornerstone';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
@@ -118,6 +118,9 @@ function ViewerLayout({
   const isReadOnlyViewer = isReadOnlyViewerAccess(location.search);
   const isEvaluationViewer = isEvaluationAdmin || isEvaluationAttempt || isEvaluationResult;
   const shouldEmitEvaluationContext = isEvaluationViewer;
+  // Findings live at the bottom of the left sidebar, below the study browser. An attempt
+  // viewer draws its own annotations but is not shown the saved findings.
+  const showEvaluationFindings = isEvaluationAdmin || isEvaluationResult;
   const resultSeriesInstanceUIDs = useMemo(
     () =>
       [
@@ -141,8 +144,6 @@ function ViewerLayout({
   const [studyQuestionPanelMinSize, setStudyQuestionPanelMinSize] = useState(0);
   const [studyQuestionPanelMaxSize, setStudyQuestionPanelMaxSize] = useState(100);
   const [studyQuestionViewportMinSize, setStudyQuestionViewportMinSize] = useState(0);
-  const [evaluationFindingsOpen, setEvaluationFindingsOpen] = useState(false);
-  const evaluationFindingsTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const hasPanels = useCallback(
     (side): boolean => !!panelService.getPanels(side).length,
@@ -157,26 +158,6 @@ function ViewerLayout({
   const [rightPanelClosedState, setRightPanelClosed] = useState(
     () => rightPanelClosed || isMobileViewport()
   );
-
-  const closeEvaluationFindings = useCallback(() => {
-    setEvaluationFindingsOpen(false);
-    window.requestAnimationFrame(() => evaluationFindingsTriggerRef.current?.focus());
-  }, []);
-
-  useEffect(() => {
-    if (!evaluationFindingsOpen) {
-      return;
-    }
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeEvaluationFindings();
-      }
-    };
-
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [closeEvaluationFindings, evaluationFindingsOpen]);
 
   const [
     leftPanelProps,
@@ -897,12 +878,54 @@ function ViewerLayout({
             {!isStudyFeedback && hasLeftPanels ? (
               <>
                 <ResizablePanel {...resizableLeftPanelProps}>
-                  <SidePanelWithServices
-                    side="left"
-                    isExpanded={!leftPanelClosedState}
-                    servicesManager={servicesManager}
-                    {...leftPanelProps}
-                  />
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div className="min-h-0 flex-1 overflow-hidden">
+                      <SidePanelWithServices
+                        side="left"
+                        isExpanded={!leftPanelClosedState}
+                        servicesManager={servicesManager}
+                        {...leftPanelProps}
+                      />
+                    </div>
+                    {showEvaluationFindings && !leftPanelClosedState && (
+                      <section
+                        aria-label="Findings"
+                        className="border-border flex max-h-[45%] min-h-0 shrink-0 flex-col border-t"
+                      >
+                        <div className="bg-muted/60 flex h-9 shrink-0 items-center justify-between gap-2 px-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <Icons.Clipboard className="text-primary h-4 w-4 shrink-0" />
+                            <h2 className="text-foreground truncate text-xs font-medium tracking-wide">
+                              Findings
+                            </h2>
+                          </div>
+                          {isEvaluationAdmin && (
+                            <Button
+                              size="sm"
+                              className="h-7 shrink-0 gap-1.5 px-2 text-[12px]"
+                              onClick={saveEvaluationResult}
+                              title="Save annotations as finding"
+                            >
+                              <Icons.Add className="h-4 w-4" />
+                              <span>Save finding</span>
+                            </Button>
+                          )}
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+                          <PanelSliceMeasurement
+                            servicesManager={servicesManager}
+                            commandsManager={commandsManager}
+                            extensionManager={extensionManager}
+                            emptyComponent={() => (
+                              <div className="text-muted-foreground py-4 text-center text-xs">
+                                {isEvaluationResult ? 'No findings linked.' : 'No findings yet.'}
+                              </div>
+                            )}
+                          />
+                        </div>
+                      </section>
+                    )}
+                  </div>
                 </ResizablePanel>
                 <ResizableHandle
                   onDragging={onHandleDragging}
@@ -953,34 +976,6 @@ function ViewerLayout({
                     className="bg-background relative flex h-full min-h-0 flex-1 overflow-hidden"
                     onMouseEnter={handleMouseEnter}
                   >
-                    {(isEvaluationAdmin || isEvaluationResult) && !evaluationFindingsOpen && (
-                      <div className="absolute right-16 top-3 z-20 flex items-center gap-2">
-                        <Button
-                          ref={evaluationFindingsTriggerRef}
-                          variant="outline"
-                          size="lg"
-                          onClick={() => setEvaluationFindingsOpen(true)}
-                          aria-controls="evaluation-findings-drawer"
-                          aria-expanded={evaluationFindingsOpen}
-                          className="bg-popover/95 gap-2 shadow-lg backdrop-blur-sm"
-                          title="Open findings"
-                        >
-                          <Icons.Clipboard className="h-4 w-4" />
-                          <span>Findings</span>
-                        </Button>
-                        {isEvaluationAdmin && (
-                          <Button
-                            size="lg"
-                            onClick={saveEvaluationResult}
-                            className="gap-2 shadow-lg"
-                            title="Save annotations as finding"
-                          >
-                            <Icons.Add className="h-4 w-4" />
-                            <span>Save finding</span>
-                          </Button>
-                        )}
-                      </div>
-                    )}
                     <div className="relative flex h-full min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
                       <ViewportGridComp
                         servicesManager={servicesManager}
@@ -988,57 +983,6 @@ function ViewerLayout({
                         commandsManager={commandsManager}
                       />
                     </div>
-                    {(isEvaluationAdmin || isEvaluationResult) && evaluationFindingsOpen && (
-                      <aside
-                        id="evaluation-findings-drawer"
-                        aria-label="Findings"
-                        className="bg-card animate-in slide-in-from-right absolute inset-y-0 right-0 z-30 flex w-full flex-col shadow-[-1px_0_0_0_hsl(var(--border)),-16px_0_40px_-12px_rgba(0,0,0,0.5)] duration-200 motion-reduce:animate-none sm:w-[clamp(340px,38vw,420px)]"
-                      >
-                        <div className="border-border min-h-14 flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Icons.Clipboard className="text-primary h-5 w-5 shrink-0" />
-                            <h2 className="text-foreground truncate text-sm font-semibold tracking-tight">
-                              Findings
-                            </h2>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {isEvaluationAdmin && (
-                              <Button
-                                size="lg"
-                                onClick={saveEvaluationResult}
-                                className="gap-2"
-                                title="Save annotations as finding"
-                              >
-                                <Icons.Add className="h-4 w-4" />
-                                <span>Save finding</span>
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={closeEvaluationFindings}
-                              aria-label="Close findings"
-                              className="text-muted-foreground hover:text-foreground h-8 w-8"
-                              title="Close findings"
-                            >
-                              <Icons.Close className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                          <PanelMeasurement
-                            servicesManager={servicesManager}
-                            commandsManager={commandsManager}
-                            extensionManager={extensionManager}
-                            emptyComponent={() => (
-                              <div className="text-muted-foreground py-6 text-center text-sm">
-                                {isEvaluationResult ? 'No findings linked.' : 'No findings yet.'}
-                              </div>
-                            )}
-                          />
-                        </div>
-                      </aside>
-                    )}
                   </div>
                 ) : (
                   <GazeCalibrationGate

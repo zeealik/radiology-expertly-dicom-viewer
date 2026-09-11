@@ -140,6 +140,11 @@ function TrackedCornerstoneViewport(
     [added, addedRaw].forEach(evt => {
       subscriptions.push(
         measurementService.subscribe(evt, ({ source, measurement }) => {
+          // RAW_MEASUREMENT_ADDED is how a hydrated Structured Report re-enters the
+          // measurement service on page load. Those measurements are already saved, so
+          // auto-saving them writes a duplicate findings series on every refresh —
+          // only annotations the user actually draws (MEASUREMENT_ADDED) should auto-save.
+          const isHydratedFromReport = evt === addedRaw;
           const { activeViewportId } = viewportGridService.getState();
 
           // Each TrackedCornerstoneViewport receives the MeasurementService's events.
@@ -162,6 +167,7 @@ function TrackedCornerstoneViewport(
               toolName,
             });
             if (
+              !isHydratedFromReport &&
               StudyInstanceUID &&
               measurementId &&
               !autoSavedMeasurementUIDsRef.current.has(measurementId)

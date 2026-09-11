@@ -52,6 +52,7 @@ import { useMeasurements } from './hooks/useMeasurements';
 import getPanelModule from './getPanelModule';
 import PanelSegmentation from './panels/PanelSegmentation';
 import PanelMeasurement from './panels/PanelMeasurement';
+import PanelSliceMeasurement from './panels/PanelSliceMeasurement';
 import { useSegmentations } from './hooks/useSegmentations';
 import { StudySummaryFromMetadata } from './components/StudySummaryFromMetadata';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
@@ -105,9 +106,7 @@ const isEvaluationDicomAccess = () => {
   try {
     const mode = new URLSearchParams(window.location.search).get('dicomAccess');
     return (
-      mode === 'evaluation-admin' ||
-      mode === 'evaluation-attempt' ||
-      mode === 'evaluation-result'
+      mode === 'evaluation-admin' || mode === 'evaluation-attempt' || mode === 'evaluation-result'
     );
   } catch {
     return false;
@@ -318,6 +317,7 @@ export {
   useSegmentations,
   PanelSegmentation,
   PanelMeasurement,
+  PanelSliceMeasurement,
   StudySummaryFromMetadata,
   CornerstoneViewportDownloadForm,
   utils,

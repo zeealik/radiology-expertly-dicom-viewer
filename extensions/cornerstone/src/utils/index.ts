@@ -11,6 +11,7 @@ import promptHydrationDialog, {
 } from './promptHydrationDialog';
 import { getCenterExtent } from './getCenterExtent';
 import { createSegmentationForViewport } from './createSegmentationForViewport';
+import getMeasurementSliceIndex from './getMeasurementSliceIndex';
 
 const utils = {
   handleSegmentChange,
@@ -20,6 +21,7 @@ const utils = {
   promptHydrationDialog,
   getCenterExtent,
   createSegmentationForViewport,
+  getMeasurementSliceIndex,
 };
 
 export type { HydrationDialogProps, HydrationCallback, HydrationSRResult };

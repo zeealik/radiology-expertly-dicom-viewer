@@ -4,6 +4,8 @@ export * from './MeasurementTableNested';
 export * from './StudyMeasurements';
 export * from './MeasurementsMenu';
 export * from './SeriesMeasurements';
+export * from './SliceMeasurements';
+export * from './groupBySlice';
 export * from './StudyMeasurementsActions';
 export * from './MeasurementsOrAdditionalFindings';
 export * from './WindowLevelActionMenu';
