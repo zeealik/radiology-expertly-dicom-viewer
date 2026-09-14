@@ -20,30 +20,26 @@ const fontTextClasses = {
   [ButtonEnums.type.secondary]: classnames(baseFontTextClasses, 'font-400'),
 };
 
-const baseEnabledEffectClasses = 'transition duration-300 ease-in-out focus:outline-none';
+const baseEnabledEffectClasses = 'transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]';
 
 const enabledEffectClasses = {
   [ButtonEnums.type.primary]: classnames(
     baseEnabledEffectClasses,
-    'hover:bg-customblue-80 active:bg-customblue-40'
+    'hover:bg-primary/85'
   ),
   [ButtonEnums.type.secondary]: classnames(
     baseEnabledEffectClasses,
-    'hover:bg-customblue-50 active:bg-customblue-20'
+    'hover:bg-accent'
   ),
 };
 
-const baseEnabledClasses = 'text-white';
-
 const enabledClasses = {
   [ButtonEnums.type.primary]: classnames(
-    'bg-primary-main',
-    baseEnabledClasses,
+    'bg-primary-main text-primary-foreground',
     enabledEffectClasses[ButtonEnums.type.primary]
   ),
   [ButtonEnums.type.secondary]: classnames(
-    'bg-customblue-30',
-    baseEnabledClasses,
+    'bg-secondary text-secondary-foreground',
     enabledEffectClasses[ButtonEnums.type.secondary]
   ),
 };

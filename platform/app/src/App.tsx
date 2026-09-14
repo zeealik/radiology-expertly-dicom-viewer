@@ -141,11 +141,11 @@ function DicomPreloadProgressBridge({ servicesManager }) {
         zIndex: 10000,
         width: 260,
         maxWidth: 'calc(100vw - 32px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 8,
-        background: 'rgba(2, 6, 23, 0.95)',
+        border: '1px solid hsl(var(--border))',
+        borderRadius: 12,
+        background: 'hsl(var(--popover) / 0.96)',
         boxShadow: '0 18px 45px rgba(0, 0, 0, 0.35)',
-        color: '#fff',
+        color: 'hsl(var(--popover-foreground))',
         padding: 12,
         pointerEvents: 'none',
       }}
@@ -165,8 +165,8 @@ function DicomPreloadProgressBridge({ servicesManager }) {
               style={{
                 width: 14,
                 height: 14,
-                border: '2px solid rgba(14, 165, 233, 0.25)',
-                borderTopColor: '#0ea5e9',
+                border: '2px solid hsl(var(--primary) / 0.25)',
+                borderTopColor: 'hsl(var(--primary))',
                 borderRadius: '999px',
                 display: 'inline-block',
                 animation: 'spin 1s linear infinite',
@@ -180,7 +180,7 @@ function DicomPreloadProgressBridge({ servicesManager }) {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              color: 'rgba(255, 255, 255, 0.65)',
+              color: 'hsl(var(--muted-foreground))',
               fontSize: 11,
             }}
           >
@@ -199,14 +199,14 @@ function DicomPreloadProgressBridge({ servicesManager }) {
           marginTop: 8,
           overflow: 'hidden',
           borderRadius: 999,
-          background: 'rgba(255, 255, 255, 0.1)',
+          background: 'hsl(var(--muted))',
         }}
       >
         <div
           style={{
             height: '100%',
             borderRadius: 999,
-            background: '#0ea5e9',
+            background: 'hsl(var(--primary))',
             transform: `scaleX(${preloadPercent / 100})`,
             transformOrigin: 'left center',
             transition: 'transform 300ms ease',

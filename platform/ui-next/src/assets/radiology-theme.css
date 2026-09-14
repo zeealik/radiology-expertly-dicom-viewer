@@ -1,0 +1,153 @@
+:root:not(.dark) {
+  color-scheme: light;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --background: 165 18% 96%;
+  --foreground: 190 30% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 190 30% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 190 30% 16%;
+  --primary: 174 88% 27%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 172 15% 90%;
+  --secondary-foreground: 190 30% 16%;
+  --muted: 170 15% 92%;
+  --muted-foreground: 190 18% 35%;
+  --accent: 174 34% 86%;
+  --accent-foreground: 190 30% 16%;
+  --destructive: 4 68% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 178 16% 80%;
+  --input: 178 16% 76%;
+  --ring: 174 88% 27%;
+  --highlight: 174 88% 27%;
+  --neutral: 190 18% 42%;
+  --neutral-light: 190 12% 68%;
+  --neutral-dark: 190 30% 24%;
+  --form-background: 0 0% 100%;
+  --form-border: 178 16% 80%;
+  --form-text: 190 30% 16%;
+  --form-text-muted: 190 18% 35%;
+  --form-input-background: 0 0% 100%;
+  --form-input-border: 178 16% 76%;
+  --form-input-focus: 174 88% 27%;
+  --chart-1: 174 88% 27%;
+  --chart-2: 195 51% 41%;
+  --chart-3: 217 38% 50%;
+  --chart-4: 38 65% 43%;
+  --chart-5: 159 45% 42%;
+  --success-bg: hsl(156, 35%, 91%);
+  --success-border: hsl(156, 35%, 72%);
+  --success-text: hsl(156, 70%, 25%);
+  --info-bg: hsl(192, 38%, 92%);
+  --info-border: hsl(192, 38%, 75%);
+  --info-text: hsl(192, 70%, 29%);
+  --warning-bg: hsl(39, 72%, 92%);
+  --warning-border: hsl(39, 62%, 71%);
+  --warning-text: hsl(34, 80%, 27%);
+  --error-bg: hsl(4, 55%, 94%);
+  --error-border: hsl(4, 50%, 77%);
+  --error-text: hsl(4, 68%, 38%);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --background: 197 23% 8%;
+  --foreground: 185 28% 91%;
+  --card: 197 21% 13%;
+  --card-foreground: 185 28% 91%;
+  --popover: 197 20% 17%;
+  --popover-foreground: 185 28% 91%;
+  --primary: 174 49% 58%;
+  --primary-foreground: 197 28% 8%;
+  --secondary: 196 18% 20%;
+  --secondary-foreground: 185 28% 91%;
+  --muted: 197 17% 19%;
+  --muted-foreground: 190 16% 72%;
+  --accent: 180 22% 25%;
+  --accent-foreground: 185 28% 94%;
+  --destructive: 4 68% 62%;
+  --destructive-foreground: 197 23% 8%;
+  --border: 195 17% 25%;
+  --input: 195 17% 30%;
+  --ring: 174 49% 58%;
+  --highlight: 174 49% 58%;
+  --neutral: 190 16% 72%;
+  --neutral-light: 185 28% 91%;
+  --neutral-dark: 195 17% 30%;
+  --form-background: 197 21% 13%;
+  --form-border: 195 17% 25%;
+  --form-text: 185 28% 91%;
+  --form-text-muted: 190 16% 72%;
+  --form-input-background: 197 23% 8%;
+  --form-input-border: 195 17% 30%;
+  --form-input-focus: 174 49% 58%;
+  --chart-1: 174 49% 58%;
+  --chart-2: 195 54% 64%;
+  --chart-3: 217 51% 72%;
+  --chart-4: 38 73% 68%;
+  --chart-5: 159 45% 60%;
+  --success-bg: hsl(156, 28%, 17%);
+  --success-border: hsl(156, 30%, 32%);
+  --success-text: hsl(156, 60%, 70%);
+  --info-bg: hsl(192, 30%, 17%);
+  --info-border: hsl(192, 30%, 34%);
+  --info-text: hsl(192, 70%, 73%);
+  --warning-bg: hsl(39, 36%, 18%);
+  --warning-border: hsl(39, 42%, 36%);
+  --warning-text: hsl(39, 73%, 75%);
+  --error-bg: hsl(4, 34%, 19%);
+  --error-border: hsl(4, 38%, 38%);
+  --error-text: hsl(4, 70%, 75%);
+}
+
+html, body {
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.28);
+  color: hsl(var(--foreground));
+}
+
+:focus-visible {
+  outline-color: hsl(var(--ring));
+}
+
+.radiology-tool-shelf {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+
+.radiology-tool-shelf::-webkit-scrollbar {
+  height: 4px;
+}
+
+.radiology-tool-shelf::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .radiology-chrome {
+    backdrop-filter: none !important;
+    background: hsl(var(--popover)) !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .radiology-chrome {
+    backdrop-filter: none !important;
+    background: hsl(var(--popover)) !important;
+    border-color: hsl(var(--foreground)) !important;
+  }
+}

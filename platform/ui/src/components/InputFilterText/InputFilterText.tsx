@@ -60,7 +60,7 @@ const InputFilterText = ({
       <input
         ref={searchInputRef}
         type="text"
-        className="border-inputfield-main focus:border-inputfield-focus disabled:border-inputfield-disabled placeholder:text-inputfield-placeholder block w-full appearance-none rounded-md border bg-black py-2 px-9 text-base leading-tight shadow transition duration-300 focus:outline-none"
+        className="border-inputfield-main focus:border-inputfield-focus disabled:border-inputfield-disabled placeholder:text-muted-foreground text-foreground block w-full appearance-none rounded-md border bg-card px-9 py-2 text-base leading-tight transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus:outline-none"
         placeholder={placeholder}
         onChange={event => handleFilterTextChanged(event.target.value)}
         autoComplete="off"

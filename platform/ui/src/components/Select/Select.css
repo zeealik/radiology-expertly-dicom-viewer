@@ -1,9 +1,9 @@
 .customSelect__wrapper .customSelect__control {
-  @apply border-secondary-light w-full rounded border bg-black text-sm leading-tight text-white shadow transition duration-300;
+  @apply border-input w-full rounded-md border bg-card text-sm leading-tight text-foreground transition-colors duration-150;
   min-height: 28px;
 }
 .customSelect__wrapper .customSelect__control:hover {
-  @apply border-gray-500;
+  @apply border-primary;
 }
 
 .customSelect__control {
@@ -16,14 +16,14 @@
 }
 
 .customSelect__input {
-  @apply text-white !important;
+  @apply text-foreground !important;
   font-size: 0.75rem !important;
   line-height: 1.25 !important;
 }
 
 .customSelect__wrapper .customSelect__control:focus,
 .customSelect__wrapper .customSelect__control--menu-is-open {
-  @apply border-gray-500 outline-none;
+  @apply border-ring outline-none;
 }
 
 .customSelect--is-disabled .customSelect__control--is-disabled {
@@ -43,7 +43,7 @@
 }
 
  .customSelect__option {
-  color: #d6d6d6 !important;
+  color: hsl(var(--foreground)) !important;
   font-size: 14px !important;
   display: flex !important;
   align-items: center !important;
@@ -55,7 +55,7 @@
 }
 
 .customSelect__wrapper .customSelect__single-value {
-  @apply text-aqua-pale pl-1;
+  @apply text-foreground pl-1;
   max-width: calc(100% - 20px);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,26 +86,26 @@
   border-radius: 10px;
 }
 .customSelect__menu-portal .customSelect__placeholder {
-  @apply text-aqua-pale pl-1.5;
+  @apply text-muted-foreground pl-1.5;
 }
 
 .customSelect__menu-portal .customSelect__menu-list::-webkit-scrollbar-thumb {
-  background-color: #0944b3;
+  background-color: hsl(var(--muted-foreground) / 0.45);
   border-radius: 10px;
 }
 
 .customSelect__option--is-focused {
-  background-color: #0944b391 !important;
+  background-color: hsl(var(--accent)) !important;
 }
 
 .customSelect__menu-portal .customSelect__option:hover {
-  background-color: #0944b391;
+  background-color: hsl(var(--accent));
 }
 
 .customSelect__menu-portal .customSelect__menu {
-  border: 2px solid #0944b3;
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
-  background-color: #151515 !important;
+  background-color: hsl(var(--popover)) !important;
 }
 
 .css-1hwfws3 {

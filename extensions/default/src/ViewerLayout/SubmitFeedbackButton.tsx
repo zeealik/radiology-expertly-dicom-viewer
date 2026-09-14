@@ -53,7 +53,7 @@ function SubmitFeedbackButton(): React.ReactElement {
       type="button"
       onClick={handleClick}
       disabled={sending}
-      className="bg-primary-main hover:bg-primary-light focus:ring-primary-main focus:ring-offset-bkg-full absolute bottom-6 right-8 z-50 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60"
+      className="bg-primary-main hover:bg-primary-light focus:ring-primary-main focus:ring-offset-bkg-full absolute bottom-6 right-8 z-50 rounded-md px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg ring-1 ring-white/10 backdrop-blur-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60"
     >
       {sending ? 'Submitting…' : 'Submit and Share Feedback'}
     </button>

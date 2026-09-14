@@ -17,7 +17,7 @@ const NavBar = ({
   return (
     <div
       className={classnames(
-        'bg-popover border-border z-20 border-b px-1',
+        'radiology-chrome bg-popover/95 border-border z-20 border-b px-1 backdrop-blur-xl supports-[backdrop-filter]:bg-popover/88',
         isSticky && stickyClasses,
         !isSticky && notStickyClasses,
         className

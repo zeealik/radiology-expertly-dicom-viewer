@@ -499,7 +499,7 @@ function StudyQuestionPanel({
           type="button"
           onClick={handleSubmit}
           disabled={sending || !answer.trim()}
-          className="bg-primary-main hover:bg-primary-light focus:ring-primary-main h-10 rounded px-4 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:opacity-60"
+          className="bg-primary-main hover:bg-primary-light focus:ring-primary-main h-10 rounded px-4 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2 disabled:opacity-60"
         >
           {sending ? 'Submitting...' : 'Submit Answer'}
         </button>

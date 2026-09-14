@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import classnames from 'classnames';
 
 const baseClasses =
-  'leading-none font-sans text-center justify-center items-center outline-none transition duration-300 ease-in-out focus:outline-none';
+  'leading-none font-sans text-center justify-center items-center outline-none transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring';
 
 const defaults = {
   color: 'default',
@@ -27,9 +27,9 @@ const roundedClasses = {
 const variants = {
   text: {
     default:
-      'text-primary-light hover:bg-primary-light hover:text-white active:opacity-80 focus:bg-primary-light focus:text-white',
+      'text-primary-main hover:bg-primary-light hover:text-primary-foreground active:opacity-80 focus:bg-primary-light focus:text-primary-foreground',
     primary:
-      'text-primary-main hover:bg-primary-main hover:text-white active:opacity-80 focus:bg-primary-main focus:text-white',
+      'text-primary-main hover:bg-primary-main hover:text-primary-foreground active:opacity-80 focus:bg-primary-main focus:text-primary-foreground',
     secondary:
       'text-secondary-light hover:bg-secondary-light hover:text-white active:opacity-80 focus:bg-secondary-light focus:text-white',
     white:
@@ -39,7 +39,7 @@ const variants = {
   },
   outlined: {
     default:
-      'text-primary-light hover:bg-primary-light hover:text-black focus:text-black focus:bg-primary-light active:opacity-80',
+      'text-primary-main hover:bg-primary-light hover:text-primary-foreground focus:text-primary-foreground focus:bg-primary-light active:opacity-80',
     primary: 'text-primary-main hover:opacity-80 active:opacity-100 focus:opacity-80',
     secondary: 'text-secondary-light hover:opacity-80 active:opacity-100 focus:opacity-80',
     translucent: 'text-white hover:opacity-80 active:opacity-100 focus:opacity-80',
@@ -52,13 +52,13 @@ const variants = {
       'border bg-transparent border-primary-main text-white hover:opacity-80 active:opacity-100 focus:opacity-80',
   },
   contained: {
-    default: 'text-black hover:opacity-80 active:opacity-100 focus:opacity-80',
-    primary: 'text-white hover:opacity-80 active:opacity-100 focus:opacity-80',
+    default: 'text-primary-foreground hover:opacity-80 active:opacity-100 focus:opacity-80',
+    primary: 'text-primary-foreground hover:opacity-80 active:opacity-100 focus:opacity-80',
     primaryDark: 'text-primary-active hover:opacity-80 active:opacity-100 focus:opacity-80',
     secondary: 'text-white hover:opacity-80 active:opacity-100 focus:opacity-80',
     white: 'text-black hover:opacity-80 active:opacity-100 focus:opacity-80',
     black: 'text-white hover:opacity-80 active:opacity-100 focus:opacity-80',
-    light: 'border text-black hover:opacity-80 active:opacity-100 focus:opacity-80',
+    light: 'border text-primary-foreground hover:opacity-80 active:opacity-100 focus:opacity-80',
   },
   disabled: {
     default: 'cursor-not-allowed opacity-50 text-black',

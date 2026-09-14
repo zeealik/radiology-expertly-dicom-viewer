@@ -36,6 +36,9 @@ const mobileViewportMediaQuery = '(max-width: 767px)';
 const isMobileViewport = () =>
   typeof window !== 'undefined' && window.matchMedia(mobileViewportMediaQuery).matches;
 
+const isCompactViewport = () =>
+  typeof window !== 'undefined' && window.matchMedia('(max-width: 1199px)').matches;
+
 const getRequestFailureMessage = (error: unknown, fallback: string): string => {
   const requestError = error as {
     message?: string;
@@ -118,8 +121,8 @@ function ViewerLayout({
   const isReadOnlyViewer = isReadOnlyViewerAccess(location.search);
   const isEvaluationViewer = isEvaluationAdmin || isEvaluationAttempt || isEvaluationResult;
   const shouldEmitEvaluationContext = isEvaluationViewer;
-  // Findings live at the bottom of the left sidebar, below the study browser. An attempt
-  // viewer draws its own annotations but is not shown the saved findings.
+  // Evaluation findings sit below the study browser. An attempt viewer draws its
+  // own annotations but is not shown the saved findings.
   const showEvaluationFindings = isEvaluationAdmin || isEvaluationResult;
   const resultSeriesInstanceUIDs = useMemo(
     () =>
@@ -156,7 +159,7 @@ function ViewerLayout({
     () => leftPanelClosed || isMobileViewport()
   );
   const [rightPanelClosedState, setRightPanelClosed] = useState(
-    () => rightPanelClosed || isMobileViewport()
+    () => rightPanelClosed || isCompactViewport()
   );
 
   const [
@@ -858,7 +861,7 @@ function ViewerLayout({
   const viewportComponents = viewports.map(getViewportComponentData);
 
   return (
-    <div>
+    <div className="flex h-screen min-h-0 flex-col bg-background">
       <ViewerHeader
         hotkeysManager={hotkeysManager}
         extensionManager={extensionManager}
@@ -866,8 +869,7 @@ function ViewerLayout({
         appConfig={isStudyFeedback ? { ...appConfig, showStudyList: false } : appConfig}
       />
       <div
-        className="bg-background relative flex w-full flex-row flex-nowrap items-stretch overflow-hidden"
-        style={{ height: 'calc(100vh - 52px)' }}
+        className="bg-background relative flex min-h-0 w-full flex-1 flex-row flex-nowrap items-stretch overflow-hidden"
       >
         <React.Fragment>
           {!isStudyFeedback && showLoadingIndicator && (
@@ -890,19 +892,17 @@ function ViewerLayout({
                     {showEvaluationFindings && !leftPanelClosedState && (
                       <section
                         aria-label="Findings"
-                        className="border-border flex max-h-[45%] min-h-0 shrink-0 flex-col border-t"
+                        className="border-border bg-card flex max-h-[45%] min-h-0 shrink-0 flex-col border-t"
                       >
-                        <div className="bg-muted/60 flex h-9 shrink-0 items-center justify-between gap-2 px-2">
+                        <div className="border-border bg-muted/50 flex h-10 shrink-0 items-center justify-between gap-2 border-b px-2">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Icons.Clipboard className="text-primary h-4 w-4 shrink-0" />
-                            <h2 className="text-foreground truncate text-xs font-medium tracking-wide">
-                              Findings
-                            </h2>
+                            <h2 className="text-foreground truncate text-xs font-semibold">Findings</h2>
                           </div>
                           {isEvaluationAdmin && (
                             <Button
                               size="sm"
-                              className="h-7 shrink-0 gap-1.5 px-2 text-[12px]"
+                              className="h-7 shrink-0 gap-1 px-2 text-xs"
                               onClick={saveEvaluationResult}
                               title="Save annotations as finding"
                             >
@@ -944,7 +944,7 @@ function ViewerLayout({
                     className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row"
                     onMouseEnter={handleMouseEnter}
                   >
-                    <div className="bg-background relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
+                    <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden bg-black">
                       <ViewportGridComp
                         servicesManager={servicesManager}
                         viewportComponents={viewportComponents}
@@ -973,7 +973,7 @@ function ViewerLayout({
                   </div>
                 ) : isEvaluationViewer ? (
                   <div
-                    className="bg-background relative flex h-full min-h-0 flex-1 overflow-hidden"
+                    className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-black"
                     onMouseEnter={handleMouseEnter}
                   >
                     <div className="relative flex h-full min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden">
@@ -991,7 +991,7 @@ function ViewerLayout({
                   >
                     <div
                       ref={studyQuestionPanelGroupRef}
-                      className="bg-background relative h-full min-h-0 flex-1 overflow-hidden"
+                      className="relative h-full min-h-0 flex-1 overflow-hidden bg-black"
                       onMouseEnter={handleMouseEnter}
                     >
                       <ResizablePanelGroup

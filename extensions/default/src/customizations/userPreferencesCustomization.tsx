@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useSystem, hotkeys as hotkeysModule } from '@ohif/core';
 import { UserPreferencesModal, FooterAction } from '@ohif/ui-next';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,20 @@ interface HotkeyDefinition {
 interface HotkeyDefinitions {
   [key: string]: HotkeyDefinition;
 }
+
+const APPEARANCE_STORAGE_KEY = 'radiology-expertly-theme';
+type Appearance = 'dark' | 'light';
+
+const getAppearance = (): Appearance =>
+  document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+
+const applyAppearance = (appearance: Appearance) => {
+  document.documentElement.classList.toggle('dark', appearance === 'dark');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute(
+    'content',
+    appearance === 'dark' ? '#10171c' : '#f3f6f5'
+  );
+};
 
 function UserPreferencesModalDefault({ hide }: { hide: () => void }) {
   const { hotkeysManager } = useSystem();
@@ -50,11 +64,28 @@ function UserPreferencesModalDefault({ hide }: { hide: () => void }) {
     : resolvedHotkeyDefaults;
 
   const currentLanguage = currentLanguageFn();
+  const initialAppearance = useRef<Appearance>(getAppearance());
+  const savedAppearance = useRef(false);
 
   const [state, setState] = useState({
     hotkeyDefinitions: initialHotkeyDefinitions,
     languageValue: currentLanguage.value,
+    appearance: initialAppearance.current,
   });
+
+  useEffect(
+    () => () => {
+      if (!savedAppearance.current) {
+        applyAppearance(initialAppearance.current);
+      }
+    },
+    []
+  );
+
+  const onAppearanceChange = (appearance: Appearance) => {
+    applyAppearance(appearance);
+    setState(current => ({ ...current, appearance }));
+  };
 
   const onLanguageChangeHandler = (value: string) => {
     setState(state => ({ ...state, languageValue: value }));
@@ -78,7 +109,10 @@ function UserPreferencesModalDefault({ hide }: { hide: () => void }) {
       ...state,
       languageValue: defaultLanguage.value,
       hotkeyDefinitions: resolvedHotkeyDefaults,
+      appearance: 'dark',
     }));
+
+    applyAppearance('dark');
 
     hotkeysManager.restoreDefaultBindings();
   };
@@ -126,6 +160,30 @@ function UserPreferencesModalDefault({ hide }: { hide: () => void }) {
   return (
     <UserPreferencesModal>
       <UserPreferencesModal.Body>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
+          <UserPreferencesModal.SubHeading>Appearance</UserPreferencesModal.SubHeading>
+          <div
+            role="group"
+            aria-label="Appearance"
+            className="inline-flex rounded-lg bg-muted p-1"
+          >
+            {(['dark', 'light'] as const).map(appearance => (
+              <button
+                key={appearance}
+                type="button"
+                aria-pressed={state.appearance === appearance}
+                onClick={() => onAppearanceChange(appearance)}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  state.appearance === appearance
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {appearance === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Language Section */}
         <div className="mb-3 flex items-center space-x-14">
           <UserPreferencesModal.SubHeading>{t('Language')}</UserPreferencesModal.SubHeading>
@@ -184,6 +242,12 @@ function UserPreferencesModalDefault({ hide }: { hide: () => void }) {
           </FooterAction.Secondary>
           <FooterAction.Primary
             onClick={() => {
+              try {
+                window.localStorage.setItem(APPEARANCE_STORAGE_KEY, state.appearance);
+              } catch {
+                // Appearance still applies for this session when storage is unavailable.
+              }
+              savedAppearance.current = true;
               if (state.languageValue !== currentLanguage.value) {
                 i18n.changeLanguage(state.languageValue);
                 // Force page reload after language change to ensure all translations are applied

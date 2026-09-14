@@ -20,7 +20,7 @@ const ContextMenu = ({ items, ...props }) => {
           data-cy="context-menu-item"
           onClick={() => item.action(item, props)}
           style={{ justifyContent: 'space-between' }}
-          className="hover:bg-primary-dark border-primary-dark flex cursor-pointer items-center border-b px-4 py-3 transition duration-300 last:border-b-0"
+          className="hover:bg-accent border-border flex cursor-pointer items-center border-b px-4 py-3 transition-colors duration-150 last:border-b-0"
         >
           <Typography>{item.label}</Typography>
           {item.iconRight && (

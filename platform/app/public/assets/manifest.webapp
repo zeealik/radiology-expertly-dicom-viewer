@@ -1,14 +1,10 @@
 {
   "version": "2.2.1",
-  "name": "OHIF Viewer",
-  "description": "OHIF Viewer",
+  "name": "Radiology Expertly DICOM Viewer",
+  "description": "Radiology Expertly DICOM viewer",
   "icons": {
-    "60": "/assets/firefox_app_60x60.png",
-    "128": "/assets/firefox_app_128x128.png",
-    "512": "/assets/firefox_app_512x512.png"
-  },
-  "developer": {
-    "name": "OHIF Contributors",
-    "url": "https://github.com/ohif/viewers"
+    "60": "/assets/apple-touch-icon-180x180.png",
+    "128": "/assets/radiology-expertly-192.png",
+    "512": "/assets/radiology-expertly-512.png"
   }
 }

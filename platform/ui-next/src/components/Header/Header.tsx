@@ -59,13 +59,13 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="flex h-[56px] min-w-0 items-center gap-2 overflow-hidden">
+        <div className="flex h-[52px] min-w-0 items-center gap-2 overflow-hidden px-2">
           <div className="flex min-w-0 flex-none items-center">
             <div className="inline-flex min-w-0 items-center">
               {isReturnEnabled && (
                 <button
                   type="button"
-                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-10 w-12 flex-none cursor-pointer items-center justify-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 md:w-14"
+                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-9 w-9 flex-none cursor-pointer items-center justify-center rounded-lg transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2"
                   onClick={onClickReturn}
                   aria-label="Return to work list"
                   data-cy="return-to-work-list"
@@ -73,17 +73,29 @@ function Header({
                   <Icons.ArrowLeftBold className="h-5 w-5" />
                 </button>
               )}
-              <div className="ml-1 flex h-10 w-8 flex-none items-center overflow-hidden md:ml-2 [&_svg]:max-w-none [&_svg]:shrink-0">
-                {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
+              <div className="ml-1 flex h-9 flex-none items-center gap-2 overflow-hidden md:ml-2 [&_svg]:max-w-none [&_svg]:shrink-0">
+                {WhiteLabeling?.createLogoComponentFn?.(React, props) || (
+                  <>
+                    <img
+                      src={`${(window as Window & { PUBLIC_URL?: string }).PUBLIC_URL || '/'}assets/radiology-expertly.svg`}
+                      alt=""
+                      className="h-8 w-8 shrink-0"
+                    />
+                    <span className="text-foreground hidden whitespace-nowrap text-sm font-semibold tracking-[-0.02em] md:inline">
+                      Radiology Expertly DICOM Viewer
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
-          <div className="hidden h-8 flex-none items-center lg:flex">{Secondary}</div>
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <div className="flex max-w-full items-center justify-start gap-1 overflow-x-auto px-1 md:justify-center md:gap-2 md:px-2">
+          <div className="hidden min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden md:flex">
+            {Secondary && <div className="flex shrink-0 items-center">{Secondary}</div>}
+            <div className="radiology-tool-shelf flex min-w-0 items-center justify-center gap-1 overflow-x-auto px-1">
               {children}
             </div>
           </div>
+          <div className="min-w-0 flex-1 md:hidden" />
           <div className="flex flex-none select-none items-center">
             {UndoRedo}
             <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
@@ -125,6 +137,12 @@ function Header({
             </div>
           </div>
         </div>
+        {(children || Secondary) && (
+          <div className="radiology-tool-shelf border-border/70 flex min-h-[46px] items-center justify-center gap-2 overflow-x-auto border-t px-2 md:hidden">
+            {Secondary && <div className="flex shrink-0 items-center">{Secondary}</div>}
+            <div className="flex min-w-max items-center gap-1 py-1">{children}</div>
+          </div>
+        )}
       </NavBar>
     </IconPresentationProvider>
   );

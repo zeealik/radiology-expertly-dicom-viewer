@@ -443,7 +443,7 @@ function GazeCalibrationGate({
               <button
                 type="button"
                 onClick={startCalibration}
-                className="bg-primary-main hover:bg-primary-light focus:ring-primary-main mt-6 w-full rounded px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
+                className="bg-primary-main hover:bg-primary-light focus:ring-primary-main mt-6 w-full rounded px-4 py-2.5 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2"
               >
                 Start calibration
               </button>
@@ -472,7 +472,7 @@ function GazeCalibrationGate({
               <button
                 type="button"
                 onClick={startCalibration}
-                className="bg-primary-main hover:bg-primary-light focus:ring-primary-main mt-6 w-full rounded px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
+                className="bg-primary-main hover:bg-primary-light focus:ring-primary-main mt-6 w-full rounded px-4 py-2.5 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2"
               >
                 Redo calibration
               </button>

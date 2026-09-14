@@ -26,14 +26,14 @@ module.exports = {
       inherit: 'inherit',
 
       aqua: {
-        pale: '#7bb2ce',
+        pale: 'hsl(var(--primary))',
       },
 
       primary: {
-        light: 'hsl(199 89% 60%)',
-        main: 'hsl(199 89% 48%)',
-        dark: 'hsl(199 89% 36%)',
-        active: 'hsl(199 89% 48%)',
+        light: 'hsl(var(--primary) / 0.82)',
+        main: 'hsl(var(--primary))',
+        dark: 'hsl(var(--primary))',
+        active: 'hsl(var(--primary))',
       },
       inputfield: {
         main: 'hsl(var(--input))',
@@ -43,10 +43,10 @@ module.exports = {
       },
 
       secondary: {
-        light: 'hsl(220 13% 35%)',
-        main: 'hsl(220 13% 25%)',
-        dark: 'hsl(220 13% 18%)',
-        active: 'hsl(220 13% 22%)',
+        light: 'hsl(var(--secondary))',
+        main: 'hsl(var(--secondary))',
+        dark: 'hsl(var(--background))',
+        active: 'hsl(var(--accent))',
       },
 
       indigo: {
@@ -54,25 +54,25 @@ module.exports = {
       },
 
       common: {
-        bright: 'hsl(220 9% 85%)',
-        light: 'hsl(220 9% 65%)',
-        main: 'hsl(220 9% 98%)',
-        dark: 'hsl(220 9% 45%)',
-        active: 'hsl(220 9% 55%)',
+        bright: 'hsl(var(--foreground))',
+        light: 'hsl(var(--muted-foreground))',
+        main: 'hsl(var(--foreground))',
+        dark: 'hsl(var(--muted-foreground))',
+        active: 'hsl(var(--primary))',
       },
       bkg: {
-        low: 'hsl(220 13% 14%)',
-        med: 'hsl(220 13% 18%)',
-        full: 'hsl(220 13% 22%)',
+        low: 'hsl(var(--background))',
+        med: 'hsl(var(--card))',
+        full: 'hsl(var(--popover))',
       },
       info: {
-        primary: 'hsl(220 9% 98%)',
-        secondary: 'hsl(199 89% 60%)',
+        primary: 'hsl(var(--foreground))',
+        secondary: 'hsl(var(--primary))',
       },
       actions: {
-        primary: 'hsl(199 89% 48%)',
-        highlight: 'hsl(199 89% 60%)',
-        hover: 'hsla(199, 89%, 48%, 0.2)',
+        primary: 'hsl(var(--primary))',
+        highlight: 'hsl(var(--highlight))',
+        hover: 'hsl(var(--primary) / 0.2)',
       },
       customgreen: {
         100: '#05D97C',

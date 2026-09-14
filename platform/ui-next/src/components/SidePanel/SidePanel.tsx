@@ -285,11 +285,11 @@ const SidePanel = ({
     const _childComponents = Array.isArray(tabs) ? tabs : [tabs];
     return (
       <>
-        <div
-          className={classnames(
-            'bg-popover flex h-[28px] w-full cursor-pointer items-center rounded-md',
-            side === 'left' ? 'justify-end pr-2' : 'justify-start pl-2'
-          )}
+        <button
+          type="button"
+          className="bg-popover focus-visible:ring-ring flex h-[28px] shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+          style={{ width: `${collapsedWidth}px` }}
+          aria-label={`Expand ${side} panel`}
           onClick={() => {
             updatePanelOpen(!panelOpen);
           }}
@@ -298,7 +298,7 @@ const SidePanel = ({
           <Icons.NavigationPanelReveal
             className={classnames('text-primary', side === 'left' && 'rotate-180 transform')}
           />
-        </div>
+        </button>
         <div className={classnames('mt-3 flex flex-col space-y-3')}>
           {_childComponents.map((childComponent, index) => (
             <Tooltip key={index}>

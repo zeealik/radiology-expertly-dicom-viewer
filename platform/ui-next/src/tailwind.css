@@ -1,4 +1,5 @@
 @import './assets/fonts.css';
+@import './assets/radiology-theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -131,10 +132,10 @@
 
 @layer utilities {
   .medical-gradient {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.84) 100%);
   }
   .medical-gradient-light {
-    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--secondary)) 100%);
   }
 }
 

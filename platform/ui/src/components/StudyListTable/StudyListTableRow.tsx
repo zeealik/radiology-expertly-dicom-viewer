@@ -15,14 +15,14 @@ const StudyListTableRow = props => {
       >
         <td
           className={classnames('border-0 p-0', {
-            'border-secondary-light bg-primary-dark border-b': isExpanded,
+            'border-border bg-card border-b': isExpanded,
           })}
         >
           <div
             className={classnames(
-              'w-full transition duration-300',
+              'w-full transition-colors duration-150',
               {
-                'border-primary-light hover:border-secondary-light mb-2 overflow-visible rounded border':
+                'border-border hover:border-primary mb-2 overflow-visible rounded-lg border':
                   isExpanded,
               },
               {
@@ -34,11 +34,11 @@ const StudyListTableRow = props => {
               <tbody>
                 <tr
                   className={classnames(
-                    'hover:bg-secondary-main cursor-pointer transition duration-300',
+                    'hover:bg-muted cursor-pointer transition-colors duration-150',
                     {
-                      'bg-primary-dark': !isExpanded,
+                      'bg-card': !isExpanded,
                     },
-                    { 'bg-secondary-dark': isExpanded }
+                    { 'bg-accent': isExpanded }
                   )}
                   onClick={onClickRow}
                   data-cy={clickableCY}
@@ -50,7 +50,7 @@ const StudyListTableRow = props => {
                         key={index}
                         className={classnames(
                           'truncate px-4 py-2 text-base',
-                          { 'border-secondary-light border-b': !isExpanded },
+                          { 'border-border border-b': !isExpanded },
                           getGridWidthClass(gridCol) || ''
                         )}
                         style={{
@@ -79,7 +79,7 @@ const StudyListTableRow = props => {
                   })}
                 </tr>
                 {isExpanded && (
-                  <tr className="max-h-0 w-full select-text overflow-hidden bg-black">
+                  <tr className="bg-card max-h-0 w-full select-text overflow-hidden">
                     <td colSpan={row.length}>{expandedContent}</td>
                   </tr>
                 )}

@@ -104,7 +104,7 @@ function StudyFeedbackPage(): React.ReactElement {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="bg-primary-main hover:bg-primary-light focus:ring-primary-main rounded px-5 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
+              className="bg-primary-main hover:bg-primary-light focus:ring-primary-main rounded px-5 py-2.5 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2"
             >
               Proceed to Main Page
             </button>
@@ -113,7 +113,7 @@ function StudyFeedbackPage(): React.ReactElement {
               type="button"
               onClick={handleSubmit}
               disabled={sending || !feedback.trim()}
-              className="bg-primary-main hover:bg-primary-light focus:ring-primary-main rounded px-5 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-primary-main hover:bg-primary-light focus:ring-primary-main rounded px-5 py-2.5 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {sending ? 'Submitting...' : 'Submit Feedback'}
             </button>

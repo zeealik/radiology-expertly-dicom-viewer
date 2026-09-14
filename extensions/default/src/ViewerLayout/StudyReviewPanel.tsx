@@ -290,7 +290,7 @@ function StudyReviewPanel({
           <button
             type="button"
             onClick={() => navigate(getClearReviewPath())}
-            className="bg-primary-main hover:bg-primary-light rounded px-3 py-2 text-xs font-semibold text-white"
+            className="bg-primary-main hover:bg-primary-light rounded px-3 py-2 text-xs font-semibold text-primary-foreground"
           >
             Back
           </button>
@@ -335,7 +335,7 @@ function StudyReviewPanel({
         <button
           type="button"
           onClick={() => navigate(getFeedbackPath())}
-          className="bg-primary-main hover:bg-primary-light focus:ring-primary-main w-full rounded px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2"
+          className="bg-primary-main hover:bg-primary-light focus:ring-primary-main w-full rounded px-4 py-2.5 text-sm font-semibold text-primary-foreground transition focus:outline-none focus:ring-2"
         >
           Continue to Feedback
         </button>

@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Toaster as Sonner } from 'sonner';
 import { Icons } from '../Icons';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const [appearance, setAppearance] = useState<'dark' | 'light'>(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setAppearance(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Sonner
       className="toaster group"
@@ -15,7 +27,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         success: <Icons.StatusSuccess />,
         error: <Icons.StatusError />,
       }}
-      theme="dark"
+      theme={appearance}
       richColors="true"
       toastOptions={{
         style: {
