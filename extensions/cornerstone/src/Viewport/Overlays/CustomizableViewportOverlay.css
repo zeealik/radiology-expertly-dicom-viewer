@@ -17,6 +17,10 @@ line, it will be truncated with ellipsis in the end.
   text-align: left;
 }
 
+.viewport-overlay.overlay-top.left-viewport {
+  top: 3rem;
+}
+
 .viewport-overlay.right-viewport-scrollbar {
   text-align: right;
 }

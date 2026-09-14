@@ -86,9 +86,7 @@ function modeFactory({ modeConfiguration }) {
         'navigationComponent',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
-        'windowLevelMenu',
-      ]);
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, []);
 
       // the primary button section is created in the workflow steps
       // specific to the step

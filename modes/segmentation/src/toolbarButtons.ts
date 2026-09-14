@@ -118,6 +118,19 @@ export const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'DisplayOptions',
+    uiType: 'ohif.windowLevelMenuEmbedded',
+    props: {
+      icon: 'Controls',
+      label: 'Display options',
+      tooltip: 'Color bar, color LUT, and window presets for the active viewport',
+      isToolbarMenu: true,
+      evaluate: {
+        name: 'evaluate.windowLevelMenuEmbedded',
+      },
+    },
+  },
+  {
     id: 'voiManualControlMenu',
     uiType: 'ohif.voiManualControlMenu',
     props: {

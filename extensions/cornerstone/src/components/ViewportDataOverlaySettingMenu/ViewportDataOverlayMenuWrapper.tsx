@@ -24,7 +24,7 @@ type DataOverlayMenuProps = {
 export function ViewportDataOverlayMenuWrapper(props: DataOverlayMenuProps): ReactNode {
   const { viewportId, location, isOpen = false, onOpen, onClose, disabled, ...rest } = props;
   const { viewportDisplaySets: displaySets } = useViewportDisplaySets(viewportId);
-  const { IconContainer, className: iconClassName, containerProps } = useIconPresentation();
+  const { IconContainer, containerProps } = useIconPresentation();
 
   const handleOpenChange = (openState: boolean) => {
     if (openState) {
@@ -39,7 +39,7 @@ export function ViewportDataOverlayMenuWrapper(props: DataOverlayMenuProps): Rea
 
   const { align, side } = toolbarService.getAlignAndSide(location);
 
-  const Icon = <Icons.ViewportViews className={iconClassName} />;
+  const Icon = <Icons.ViewportViews className="h-7 w-7" />;
 
   const idProp = rest.id ? { id: `${rest.id}-${viewportId}` } : {};
   return (

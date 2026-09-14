@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSystem } from '@ohif/core';
 import { Tooltip, TooltipTrigger, TooltipContent } from '../Tooltip';
 import { Icons } from '../Icons';
 import { Button } from '../Button';
@@ -34,6 +35,7 @@ interface ToolButtonProps {
   icon?: string;
   label?: string;
   tooltip?: string;
+  shortcutToolName?: string;
   size?: 'default' | 'small';
   isActive?: boolean;
   disabled?: boolean;
@@ -50,6 +52,7 @@ function ToolButton(props: ToolButtonProps) {
     icon = 'MissingIcon',
     label,
     tooltip,
+    shortcutToolName,
     size = 'default',
     disabled = false,
     isActive = false,
@@ -61,7 +64,28 @@ function ToolButton(props: ToolButtonProps) {
   } = props;
 
   const { className: iconClassName } = useIconPresentation();
+  const hotkeysManager = useSystem()?.hotkeysManager;
+  const [shortcut, setShortcut] = React.useState<string>();
   const { buttonSizeClass, iconSizeClass } = sizeClasses[size] || sizeClasses.default;
+
+  const updateShortcut = (isOpen: boolean) => {
+    if (!isOpen || !shortcutToolName) {
+      return;
+    }
+
+    const bindings = Object.values(hotkeysManager?.hotkeyDefinitions ?? {}) as Array<{
+      commandName: string;
+      commandOptions?: { toolName?: string };
+      keys?: string | string[];
+    }>;
+    const binding = bindings.find(
+      definition =>
+        definition.commandName === 'setToolActive' &&
+        definition.commandOptions?.toolName === shortcutToolName
+    );
+    const keys = binding?.keys;
+    setShortcut(Array.isArray(keys) ? keys.join('+') : keys);
+  };
 
   const buttonClasses = cn(
     baseClasses,
@@ -77,7 +101,7 @@ function ToolButton(props: ToolButtonProps) {
   const showTooltip = hasSecondaryTooltip || defaultTooltip;
 
   return (
-    <Tooltip>
+    <Tooltip onOpenChange={updateShortcut}>
       <TooltipTrigger
         asChild
         className={cn(disabled && 'cursor-not-allowed')}
@@ -122,6 +146,9 @@ function ToolButton(props: ToolButtonProps) {
               <div className="text-muted-foreground text-xs">{disabledTooltip}</div>
             ) : (
               tooltip && <div className="text-muted-foreground text-xs">{tooltip}</div>
+            )}
+            {shortcut && !disabled && (
+              <div className="text-muted-foreground text-xs">Shortcut: {shortcut.toUpperCase()}</div>
             )}
           </div>
         )}

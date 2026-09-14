@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
@@ -83,7 +83,7 @@ export default function ModeRoute({
 
   useEffect(() => {
     const caseName = lowerCaseSearchParams.get('casename')?.trim();
-    const defaultTitle = 'Radiology Expertly';
+    const defaultTitle = 'Radiology Expertly DICOM Viewer';
 
     if (caseName) {
       document.title = caseName;
@@ -123,6 +123,17 @@ export default function ModeRoute({
   }
 
   const dataSource = extensionManager.getActiveDataSourceOrNull();
+
+  // These are rendered as component types below. Recreating them during a route
+  // update unmounts the viewport and destroys its Cornerstone instance.
+  const ViewportGridWithDataSource = useCallback(
+    props => <ViewportGrid {...props} dataSource={dataSource} />,
+    [dataSource]
+  );
+  const CombinedExtensionsContextProvider = useMemo(
+    () => createCombinedContextProvider(extensionManager, servicesManager, commandsManager),
+    [extensionManager, servicesManager, commandsManager, ExtensionDependenciesLoaded]
+  );
 
   // Only handling one route per mode for now
   const route = mode.routes?.[0] ?? null;
@@ -415,16 +426,6 @@ export default function ModeRoute({
   if (!studyInstanceUIDs || !layoutTemplateData.current || !ExtensionDependenciesLoaded) {
     return null;
   }
-
-  const ViewportGridWithDataSource = props => {
-    return ViewportGrid({ ...props, dataSource });
-  };
-
-  const CombinedExtensionsContextProvider = createCombinedContextProvider(
-    extensionManager,
-    servicesManager,
-    commandsManager
-  );
 
   const getLayoutComponent = props => {
     const layoutTemplateModuleEntry = extensionManager.getModuleEntry(

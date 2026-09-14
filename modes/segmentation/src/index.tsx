@@ -47,6 +47,7 @@ function modeFactory({ modeConfiguration }) {
         'TrackballRotate',
         'Capture',
         'Layout',
+        'DisplayOptions',
         'Crosshairs',
         'MoreTools',
       ]);
@@ -74,9 +75,7 @@ function modeFactory({ modeConfiguration }) {
         'navigationComponent',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
-        'windowLevelMenu',
-      ]);
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, []);
 
       toolbarService.updateSection('MoreTools', [
         'Reset',

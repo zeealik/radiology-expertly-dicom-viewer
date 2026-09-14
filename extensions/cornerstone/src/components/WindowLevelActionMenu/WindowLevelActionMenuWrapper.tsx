@@ -23,6 +23,9 @@ export function WindowLevelActionMenuWrapper(
     displaySets?: Array<AppTypes.DisplaySet>;
     disabled?: boolean;
     isEmbedded?: boolean;
+    isToolbarMenu?: boolean;
+    label?: string;
+    tooltip?: string;
   }>
 ): ReactNode {
   const {
@@ -33,6 +36,9 @@ export function WindowLevelActionMenuWrapper(
     onClose,
     disabled,
     isEmbedded = false,
+    isToolbarMenu = false,
+    label,
+    tooltip,
     onInteraction: onInteractionProps,
     hasEmbeddedVariantToUse,
     ...rest
@@ -45,7 +51,7 @@ export function WindowLevelActionMenuWrapper(
   const { servicesManager } = useSystem();
   const { toolbarService } = servicesManager.services;
   const { IconContainer, className: iconClassName, containerProps } = useIconPresentation();
-  const { hasColorbar, toggleColorbar } = useViewportRendering(viewportId);
+  const { hasColorbar, toggleColorbar } = useViewportRendering(viewportIdToUse);
 
   const handleOpenChange = (openState: boolean) => {
     const shouldToggleColorbar = hasColorbar && !isEmbedded;
@@ -68,7 +74,9 @@ export function WindowLevelActionMenuWrapper(
     }
   };
 
-  const { align, side } = toolbarService.getAlignAndSide(location);
+  const { align, side } = isToolbarMenu
+    ? ({ align: 'center', side: 'bottom' } as const)
+    : toolbarService.getAlignAndSide(location);
 
   const modalities = displaySets.map(displaySet => displaySet.supportsWindowLevel);
 
@@ -76,12 +84,16 @@ export function WindowLevelActionMenuWrapper(
     return null;
   }
 
-  const Icon =
-    hasColorbar && !isEmbedded && hasEmbeddedVariantToUse ? (
-      <Icons.Close className={iconClassName} />
-    ) : (
-      <Icons.ViewportWindowLevel className={iconClassName} />
-    );
+  let Icon = <Icons.ViewportWindowLevel className={iconClassName} />;
+
+  if (isToolbarMenu) {
+    Icon = <Icons.Controls className="h-7 w-7" />;
+  } else if (hasColorbar && !isEmbedded && hasEmbeddedVariantToUse) {
+    Icon = <Icons.Close className={iconClassName} />;
+  }
+  const toolbarTriggerClassName = isToolbarMenu
+    ? `text-foreground/80 hover:bg-background hover:text-highlight h-10 w-10 rounded-lg ${isOpen ? 'bg-background' : ''}`
+    : undefined;
 
   return (
     <Popover
@@ -98,6 +110,11 @@ export function WindowLevelActionMenuWrapper(
               disabled={disabled}
               {...rest}
               {...containerProps}
+              label={label}
+              tooltip={tooltip}
+              aria-label={isToolbarMenu ? label : undefined}
+              title={isToolbarMenu ? tooltip || label : undefined}
+              className={toolbarTriggerClassName || rest.className}
             >
               {Icon}
             </IconContainer>
@@ -106,6 +123,9 @@ export function WindowLevelActionMenuWrapper(
               variant="ghost"
               size="icon"
               disabled={disabled}
+              aria-label={isToolbarMenu ? label : undefined}
+              title={isToolbarMenu ? tooltip || label : undefined}
+              className={toolbarTriggerClassName || rest.className}
             >
               {Icon}
             </Button>

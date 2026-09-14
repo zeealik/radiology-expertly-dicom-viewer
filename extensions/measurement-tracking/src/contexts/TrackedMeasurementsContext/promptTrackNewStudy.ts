@@ -1,13 +1,9 @@
-import i18n from 'i18next';
 import { measurementTrackingMode } from './promptBeginTracking';
 
 const RESPONSE = {
-  NO_NEVER: -1,
   CANCEL: 0,
   CREATE_REPORT: 1,
-  ADD_SERIES: 2,
   SET_STUDY_AND_SERIES: 3,
-  NO_NOT_FOR_SERIES: 4,
 };
 
 function promptTrackNewStudy({ servicesManager, extensionManager }: withAppTypes, ctx, evt) {
@@ -22,9 +18,7 @@ function promptTrackNewStudy({ servicesManager, extensionManager }: withAppTypes
     const standardMode = appConfig?.measurementTrackingMode === measurementTrackingMode.STANDARD;
     const simplifiedMode =
       appConfig?.measurementTrackingMode === measurementTrackingMode.SIMPLIFIED;
-    let promptResult = standardMode
-      ? await _askTrackMeasurements(uiViewportDialogService, customizationService, viewportId)
-      : RESPONSE.SET_STUDY_AND_SERIES;
+    let promptResult = RESPONSE.SET_STUDY_AND_SERIES;
 
     if (promptResult === RESPONSE.SET_STUDY_AND_SERIES) {
       promptResult =
@@ -39,53 +33,6 @@ function promptTrackNewStudy({ servicesManager, extensionManager }: withAppTypes
       SeriesInstanceUID,
       viewportId,
       isBackupSave: false,
-    });
-  });
-}
-
-function _askTrackMeasurements(
-  UIViewportDialogService: AppTypes.UIViewportDialogService,
-  customizationService: AppTypes.CustomizationService,
-  viewportId
-) {
-  return new Promise(function (resolve, reject) {
-    const message = customizationService.getCustomization(
-      'viewportNotification.trackNewStudyMessage'
-    );
-    const actions = [
-      { type: 'cancel', text: i18n.t('MeasurementTable:No'), value: RESPONSE.CANCEL },
-      {
-        type: 'secondary',
-        text: i18n.t('MeasurementTable:No, do not ask again'),
-        value: RESPONSE.NO_NOT_FOR_SERIES,
-      },
-      {
-        type: 'primary',
-        text: i18n.t('MeasurementTable:Yes'),
-        value: RESPONSE.SET_STUDY_AND_SERIES,
-      },
-    ];
-    const onSubmit = result => {
-      UIViewportDialogService.hide();
-      resolve(result);
-    };
-
-    UIViewportDialogService.show({
-      viewportId,
-      type: 'info',
-      message,
-      actions,
-      onSubmit,
-      onOutsideClick: () => {
-        UIViewportDialogService.hide();
-        resolve(RESPONSE.CANCEL);
-      },
-      onKeyPress: event => {
-        if (event.key === 'Enter') {
-          const action = actions.find(action => action.value === RESPONSE.SET_STUDY_AND_SERIES);
-          onSubmit(action.value);
-        }
-      },
     });
   });
 }

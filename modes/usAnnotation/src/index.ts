@@ -114,6 +114,7 @@ function modeFactory({ modeConfiguration }) {
         'WindowLevel',
         'Capture',
         'Layout',
+        'DisplayOptions',
         'Crosshairs',
         'MoreTools',
       ]);
@@ -140,9 +141,7 @@ function modeFactory({ modeConfiguration }) {
         'navigationComponent',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
-        'windowLevelMenu',
-      ]);
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, []);
 
       toolbarService.updateSection(toolbarService.sections.measurementSection, [
         'Length',

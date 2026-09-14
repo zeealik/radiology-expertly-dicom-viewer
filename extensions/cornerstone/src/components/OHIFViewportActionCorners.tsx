@@ -29,11 +29,20 @@ function OHIFViewportActionCornersComponent({ viewportId }: OHIFViewportActionCo
     >
       <ViewportActionCorners.Container>
         <ViewportActionCorners.TopLeft>
-          <Toolbar
-            buttonSection="viewportActionMenu.topLeft"
-            viewportId={viewportId}
-            location={ButtonLocation.TopLeft}
-          />
+          <IconPresentationProvider
+            size="large"
+            IconContainer={ToolButton}
+            containerProps={{
+              size: 'default',
+              className: 'font-normal text-primary hover:bg-primary/25',
+            }}
+          >
+            <Toolbar
+              buttonSection="viewportActionMenu.topLeft"
+              viewportId={viewportId}
+              location={ButtonLocation.TopLeft}
+            />
+          </IconPresentationProvider>
         </ViewportActionCorners.TopLeft>
         <ViewportActionCorners.TopMiddle>
           <Toolbar

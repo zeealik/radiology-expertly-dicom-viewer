@@ -29,7 +29,7 @@ function ViewportOrientationMenu({
 
   const [gridState] = useViewportGrid();
   const viewportIdToUse = viewportId || gridState.activeViewportId;
-  const { IconContainer, className: iconClassName, containerProps } = useIconPresentation();
+  const { IconContainer, containerProps } = useIconPresentation();
   const [currentOrientation, setCurrentOrientation] = React.useState<string>(
     typeof viewportOrientation === 'string' ? viewportOrientation : 'axial'
   );
@@ -116,7 +116,7 @@ function ViewportOrientationMenu({
   // Get proper alignment and side based on the location using toolbar service
   const { align, side } = toolbarService.getAlignAndSide(Number(location));
 
-  const Icon = React.createElement(getIcon(currentOrientation), { className: iconClassName });
+  const Icon = React.createElement(getIcon(currentOrientation), { className: 'h-7 w-7' });
   return (
     <Popover
       open={isOpen}

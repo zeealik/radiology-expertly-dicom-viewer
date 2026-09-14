@@ -196,7 +196,7 @@ const DefaultFallback = ({
     >
       <DialogTitle className="invisible">{errorTitle}</DialogTitle>
       <DialogContent
-        className="bg-muted max-w-3xl overflow-hidden border-0 p-0"
+        className="bg-muted max-w-3xl overflow-hidden border-0 p-0 pb-6"
         onInteractOutside={e => e.preventDefault()}
       >
         <div className="p-5 pb-4">
@@ -236,22 +236,6 @@ const DefaultFallback = ({
             </ScrollArea>
           </>
         )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-end p-6 pt-2">
-          <Button
-            variant="link"
-            className="text-primary p-0"
-            onClick={() =>
-              window.open(
-                'https://github.com/OHIF/Viewers/issues/new?template=bug-report.yml',
-                '_blank'
-              )
-            }
-          >
-            Report Issue
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

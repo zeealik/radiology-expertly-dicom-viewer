@@ -147,6 +147,19 @@ const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'DisplayOptions',
+    uiType: 'ohif.windowLevelMenuEmbedded',
+    props: {
+      icon: 'Controls',
+      label: 'Display options',
+      tooltip: 'Color bar, color LUT, and window presets for the active viewport',
+      isToolbarMenu: true,
+      evaluate: {
+        name: 'evaluate.windowLevelMenuEmbedded',
+      },
+    },
+  },
+  {
     id: 'voiManualControlMenu',
     uiType: 'ohif.voiManualControlMenu',
     props: {
@@ -309,6 +322,7 @@ const toolbarButtons: Button[] = [
       icon: 'tool-stack-scroll',
       label: i18n.t('Buttons:Stack Scroll'),
       tooltip: i18n.t('Buttons:Stack Scroll'),
+      shortcutToolName: 'StackScroll',
       commands: {
         ...setToolActiveToolbar,
         commandOptions: {
@@ -587,6 +601,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-window-level',
       label: i18n.t('Buttons:Window Level'),
+      shortcutToolName: 'WindowLevel',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
@@ -604,6 +619,7 @@ const toolbarButtons: Button[] = [
       type: 'tool',
       icon: 'tool-move',
       label: i18n.t('Buttons:Pan'),
+      shortcutToolName: 'Pan',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -615,6 +631,7 @@ const toolbarButtons: Button[] = [
       type: 'tool',
       icon: 'tool-zoom',
       label: i18n.t('Buttons:Zoom'),
+      shortcutToolName: 'Zoom',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },

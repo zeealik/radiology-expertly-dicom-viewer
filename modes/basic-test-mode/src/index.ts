@@ -99,6 +99,7 @@ function modeFactory() {
         'Pan',
         'Capture',
         'Layout',
+        'DisplayOptions',
         'MPR',
         'Crosshairs',
         'MoreTools',
@@ -135,9 +136,7 @@ function modeFactory() {
         'navigationComponent',
       ]);
 
-      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, [
-        'windowLevelMenu',
-      ]);
+      toolbarService.updateSection(toolbarService.sections.viewportActionMenu.bottomLeft, []);
 
       toolbarService.updateSection('WindowLevelGroup', [
         'WindowLevel',

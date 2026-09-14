@@ -185,6 +185,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     this._removeResizeObserver();
     this.viewportGridResizeObserver = null;
     try {
+      this.renderingEngine?.getViewports().forEach(viewport => this._cancelPendingStackScroll(viewport));
       this.renderingEngine?.destroy?.();
     } catch (e) {
       console.warn('Rendering engine not destroyed', e);
@@ -205,11 +206,26 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
    * @param viewportId - The viewportId to disable
    */
   public disableElement(viewportId: string): void {
+    this._cancelPendingStackScroll(this.renderingEngine?.getViewport(viewportId));
     this.renderingEngine?.disableElement(viewportId);
 
     // clean up
     this.viewportsById.delete(viewportId);
     this.viewportsDisplaySets.delete(viewportId);
+  }
+
+  private _cancelPendingStackScroll(viewport: Types.IViewport | undefined): void {
+    if (viewport?.type !== csEnums.ViewportType.STACK) {
+      return;
+    }
+
+    // Cornerstone defers uncached stack scrolls for 40 ms. That timer holds the
+    // old viewport object and otherwise calls setImageIdIndex after it is disabled.
+    const stackViewport = viewport as Types.IViewport & { debouncedTimeout?: number };
+    if (stackViewport.debouncedTimeout !== undefined) {
+      clearTimeout(stackViewport.debouncedTimeout);
+      stackViewport.debouncedTimeout = undefined;
+    }
   }
 
   /**
@@ -469,6 +485,7 @@ class CornerstoneViewportService extends PubSubService implements IViewportServi
     // element which is not what we want. But enabledElement as part of the
     // renderingEngine is designed to be used like this. This will trigger
     // ENABLED_ELEMENT again and again, which will run onEnableElement callbacks
+    this._cancelPendingStackScroll(renderingEngine.getViewport(viewportId));
     renderingEngine.enableElement(viewportInput);
 
     viewportInfo.setViewportOptions(viewportOptions);

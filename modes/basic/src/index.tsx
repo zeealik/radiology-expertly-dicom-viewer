@@ -152,6 +152,37 @@ export function onModeEnter({
     toolbarService.updateSection(key, section);
   }
 
+  customizationService.setCustomizations(
+    {
+      'ohif.hotkeyBindings': {
+        $push: [
+          {
+            commandName: 'setToolActive',
+            commandOptions: { toolName: 'StackScroll' },
+            label: 'Stack Scroll',
+            keys: ['s'],
+            isEditable: true,
+          },
+          {
+            commandName: 'setToolActive',
+            commandOptions: { toolName: 'WindowLevel' },
+            label: 'Window Level',
+            keys: ['w'],
+            isEditable: true,
+          },
+          {
+            commandName: 'setToolActive',
+            commandOptions: { toolName: 'Pan' },
+            label: 'Pan',
+            keys: ['p'],
+            isEditable: true,
+          },
+        ],
+      },
+    },
+    'mode'
+  );
+
   if (!this.enableSegmentationEdit) {
     customizationService.setCustomizations({
       'panelSegmentation.disableEditing': {
@@ -224,6 +255,7 @@ export const toolbarSections = {
     'Zoom',
     'primaryDivider2',
     'Layout',
+    'DisplayOptions',
     'MoreTools',
   ],
 
@@ -245,7 +277,7 @@ export const toolbarSections = {
     'navigationComponent',
   ],
 
-  [TOOLBAR_SECTIONS.viewportActionMenu.bottomLeft]: ['windowLevelMenu'],
+  [TOOLBAR_SECTIONS.viewportActionMenu.bottomLeft]: [],
 
   MeasurementTools: [
     'ArrowAnnotate',

@@ -333,6 +333,7 @@ const OHIFCornerstoneViewport = React.memo(
         viewportOptions.viewportType = STACK;
       }
 
+      let cancelled = false;
       const loadViewportData = async () => {
         const viewportData = await cornerstoneCacheService.createViewportData(
           displaySets,
@@ -340,6 +341,15 @@ const OHIFCornerstoneViewport = React.memo(
           dataSource,
           initialImageIndex
         );
+
+        // The display set can finish loading after this viewport was replaced.
+        // Never attach that result to a newer viewport with the same ID.
+        if (
+          cancelled ||
+          cornerstoneViewportService.getViewportInfo(viewportId)?.getElement() !== elementRef.current
+        ) {
+          return;
+        }
 
         const presentations = getViewportPresentations(viewportId, viewportOptions);
 
@@ -363,6 +373,10 @@ const OHIFCornerstoneViewport = React.memo(
       };
 
       loadViewportData();
+
+      return () => {
+        cancelled = true;
+      };
     }, [viewportOptions, displaySets, dataSource]);
 
     const Notification = customizationService.getCustomization('ui.notificationComponent');
@@ -406,8 +420,8 @@ const OHIFCornerstoneViewport = React.memo(
             servicesManager={servicesManager}
           />
         </div>
-        {/* top offset of 24px to account for ViewportActionCorners. */}
-        <div className="absolute top-[24px] w-full">
+        {/* Keep viewport notifications below the enlarged top-left controls. */}
+        <div className="absolute top-[48px] w-full">
           {viewportDialogState.viewportId === viewportId && (
             <Notification
               id="viewport-notification"
