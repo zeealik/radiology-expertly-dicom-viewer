@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { utils } from '@ohif/core';
+import { DicomMetadataStore, utils } from '@ohif/core';
 import { ImageViewerProvider, DragAndDropProvider } from '@ohif/ui-next';
 import { useSearchParams } from '../../hooks';
 import { useAppConfig } from '@state';
@@ -80,6 +80,36 @@ export default function ModeRoute({
     dicomAccessMode === 'evaluation-admin' ||
     dicomAccessMode === 'evaluation-attempt' ||
     dicomAccessMode === 'evaluation-result';
+
+  useEffect(() => {
+    const caseName = lowerCaseSearchParams.get('casename')?.trim();
+    const defaultTitle = 'Radiology Expertly';
+
+    if (caseName) {
+      document.title = caseName;
+      return () => {
+        document.title = defaultTitle;
+      };
+    }
+
+    const updateTitle = () => {
+      const studyDescription = DicomMetadataStore.getStudy(
+        studyInstanceUIDs?.[0]
+      )?.StudyDescription?.trim();
+      document.title = studyDescription || defaultTitle;
+    };
+
+    updateTitle();
+    const subscription = DicomMetadataStore.subscribe(
+      DicomMetadataStore.EVENTS.SERIES_ADDED,
+      updateTitle
+    );
+
+    return () => {
+      subscription.unsubscribe();
+      document.title = defaultTitle;
+    };
+  }, [location, studyInstanceUIDs]);
 
   if (token) {
     updateAuthServiceAndCleanUrl(token, location, userAuthenticationService);
@@ -178,7 +208,13 @@ export default function ModeRoute({
     };
 
     validateStudies();
-  }, [studyInstanceUIDs, ExtensionDependenciesLoaded, dataSource, navigate, isEvaluationDicomAccess]);
+  }, [
+    studyInstanceUIDs,
+    ExtensionDependenciesLoaded,
+    dataSource,
+    navigate,
+    isEvaluationDicomAccess,
+  ]);
 
   useEffect(() => {
     if (!ExtensionDependenciesLoaded || !studyInstanceUIDs?.length) {
