@@ -22,7 +22,7 @@ function TrackingStatus({ viewportId }: { viewportId: string }) {
           </span>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <div>Tracking</div>
+          <div>Measurements in this series are being tracked</div>
         </TooltipContent>
       </Tooltip>
     </>

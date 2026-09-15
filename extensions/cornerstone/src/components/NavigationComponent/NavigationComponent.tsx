@@ -20,7 +20,12 @@ function NavigationComponent({ viewportId }: { viewportId: string }) {
   const { isTracked, trackedMeasurementUIDs } = useMeasurementTracking({ viewportId });
   const { viewportDisplaySets } = useViewportDisplaySets(viewportId);
   const [measurementSelected, setMeasurementSelected] = useState(0);
-  const isSRDisplaySet = viewportDisplaySets.some(displaySet => displaySet?.Modality === 'SR');
+  const measurementDisplaySet = viewportDisplaySets.find(
+    displaySet => displaySet?.Modality === 'SR'
+  ) as (AppTypes.DisplaySet & { measurements?: Array<{ imageId?: string }> }) | undefined;
+  const srMeasurements = (measurementDisplaySet?.measurements ?? []).filter(
+    measurement => measurement?.imageId
+  );
   const cornerstoneViewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
 
   // Get segmentation information
@@ -28,44 +33,37 @@ function NavigationComponent({ viewportId }: { viewportId: string }) {
     viewportId,
   });
 
-  const hasSegmentations =
-    segmentationsWithRepresentations.length > 0 &&
-    segmentationsWithRepresentations.some(
-      segmentation => segmentation?.representation?.type !== SegmentationRepresentations.Surface
-    );
+  const navigableSegmentations = segmentationsWithRepresentations.filter(
+    segmentation =>
+      segmentation?.segmentation?.segmentationId &&
+      Object.keys(segmentation.segmentation.segments ?? {}).length > 1 &&
+      segmentation?.representation?.type !== SegmentationRepresentations.Surface
+  );
+  let navigationMode: 'segment' | 'measurement' | null = null;
 
-  // prefer segment navigation if available
-  const navigationMode = hasSegmentations
-    ? 'segment'
-    : isSRDisplaySet
-      ? 'measurement'
-      : isTracked
-        ? 'measurement'
-        : null;
+  if (navigableSegmentations.length > 0) {
+    navigationMode = 'segment';
+  } else if (
+    (srMeasurements.length > 1 && cornerstoneViewport) ||
+    (isTracked && trackedMeasurementUIDs.length > 1)
+  ) {
+    navigationMode = 'measurement';
+  }
 
   const handleMeasurementNavigation = useCallback(
     (direction: number) => {
-      const measurementDisplaySet = viewportDisplaySets.find(
-        displaySet => displaySet?.Modality === 'SR'
-      );
-
-      if (measurementDisplaySet) {
-        const measurements = measurementDisplaySet.measurements;
-        if (measurements.length <= 0) {
-          return;
-        }
-
-        const newIndex = getNextIndex(measurementSelected, direction, measurements.length);
+      if (srMeasurements.length > 1 && cornerstoneViewport) {
+        const newIndex = getNextIndex(measurementSelected, direction, srMeasurements.length);
         setMeasurementSelected(newIndex);
 
-        const measurement = measurements[newIndex];
+        const measurement = srMeasurements[newIndex];
         cornerstoneViewport.setViewReference({
           referencedImageId: measurement.imageId,
         });
         return;
       }
 
-      if (isTracked && trackedMeasurementUIDs.length > 0) {
+      if (isTracked && trackedMeasurementUIDs.length > 1) {
         const newIndex = getNextIndex(
           measurementSelected,
           direction,
@@ -82,19 +80,19 @@ function NavigationComponent({ viewportId }: { viewportId: string }) {
       measurementService,
       isTracked,
       trackedMeasurementUIDs,
-      viewportDisplaySets,
+      srMeasurements,
     ]
   );
 
   const handleSegmentNavigation = useCallback(
     (direction: number) => {
-      if (!segmentationsWithRepresentations.length) {
+      if (!navigableSegmentations.length) {
         return;
       }
 
-      const activeSegmentationWithRepresentation = segmentationsWithRepresentations.find(
+      const activeSegmentationWithRepresentation = navigableSegmentations.find(
         segmentation => segmentation?.representation?.active
-      );
+      ) ?? navigableSegmentations[0];
       const segmentationId = activeSegmentationWithRepresentation.segmentation.segmentationId;
 
       utils.handleSegmentChange({
@@ -105,7 +103,7 @@ function NavigationComponent({ viewportId }: { viewportId: string }) {
         segmentationService,
       });
     },
-    [segmentationsWithRepresentations, viewportId, segmentationService]
+    [navigableSegmentations, viewportId, segmentationService]
   );
 
   // Handle navigation between segments/measurements
@@ -128,7 +126,7 @@ function NavigationComponent({ viewportId }: { viewportId: string }) {
   return (
     <ViewportActionArrows
       onArrowsClick={handleNavigate}
-      className="h-6"
+      className="mr-6 h-8"
     />
   );
 }

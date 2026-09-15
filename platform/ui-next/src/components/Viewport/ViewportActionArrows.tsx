@@ -5,10 +5,10 @@ import PropTypes from 'prop-types';
 import { Icons } from '@ohif/ui-next';
 
 const arrowClasses =
-  'cursor-pointer flex items-center justify-center shrink-0 text-primary active:text-foreground hover:bg-primary/30 rounded';
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded text-primary hover:bg-primary/30 active:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /**
- * A small set of left/right arrow icons for stepping through slices or series.
+ * Accessible controls for stepping through segments or measurements.
  */
 function ViewportActionArrows({ onArrowsClick, className }) {
   return (
@@ -16,18 +16,24 @@ function ViewportActionArrows({ onArrowsClick, className }) {
       data-cy="viewport-action-arrows"
       className={classNames(className, 'flex')}
     >
-      <div
+      <button
+        type="button"
+        aria-label="Previous segment or measurement"
         data-cy="viewport-action-arrows-left"
         className={arrowClasses}
+        onClick={() => onArrowsClick(-1)}
       >
-        <Icons.ArrowLeftBold onClick={() => onArrowsClick(-1)} />
-      </div>
-      <div
+        <Icons.ArrowLeftBold />
+      </button>
+      <button
+        type="button"
+        aria-label="Next segment or measurement"
         data-cy="viewport-action-arrows-right"
         className={arrowClasses}
+        onClick={() => onArrowsClick(1)}
       >
-        <Icons.ArrowRightBold onClick={() => onArrowsClick(1)} />
-      </div>
+        <Icons.ArrowRightBold />
+      </button>
     </div>
   );
 }

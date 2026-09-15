@@ -8,6 +8,7 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { PanelSliceMeasurement } from '@ohif/extension-cornerstone';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
+import FindingsNavigation from './FindingsNavigation';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
 import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
@@ -899,17 +900,20 @@ function ViewerLayout({
                             <Icons.Clipboard className="text-primary h-4 w-4 shrink-0" />
                             <h2 className="text-foreground truncate text-xs font-semibold">Findings</h2>
                           </div>
-                          {isEvaluationAdmin && (
-                            <Button
-                              size="sm"
-                              className="h-7 shrink-0 gap-1 px-2 text-xs"
-                              onClick={saveEvaluationResult}
-                              title="Save annotations as finding"
-                            >
-                              <Icons.Add className="h-4 w-4" />
-                              <span>Save finding</span>
-                            </Button>
-                          )}
+                          <div className="flex shrink-0 items-center gap-1">
+                            <FindingsNavigation />
+                            {isEvaluationAdmin && (
+                              <Button
+                                size="sm"
+                                className="h-7 shrink-0 gap-1 px-2 text-xs"
+                                onClick={saveEvaluationResult}
+                                title="Save annotations as finding"
+                              >
+                                <Icons.Add className="h-4 w-4" />
+                                <span>Save finding</span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
                           <PanelSliceMeasurement

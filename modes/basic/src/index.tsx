@@ -148,8 +148,18 @@ export function onModeEnter({
 
   toolbarService.register(this.toolbarButtons);
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const dicomAccess = searchParams.get('dicomAccess') || searchParams.get('dicomaccess');
+  const hasFindingsPanel = dicomAccess === 'evaluation-admin' || dicomAccess === 'evaluation-result';
+
   for (const [key, section] of Object.entries(this.toolbarSections)) {
-    toolbarService.updateSection(key, section);
+    const buttons =
+      key === TOOLBAR_SECTIONS.viewportActionMenu.topRight &&
+      hasFindingsPanel &&
+      Array.isArray(section)
+        ? section.filter(button => button !== 'navigationComponent')
+        : section;
+    toolbarService.updateSection(key, buttons);
   }
 
   customizationService.setCustomizations(
@@ -179,8 +189,7 @@ export function onModeEnter({
           },
         ],
       },
-    },
-    'mode'
+    }
   );
 
   if (!this.enableSegmentationEdit) {
@@ -273,7 +282,6 @@ export const toolbarSections = {
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topRight]: [
     'modalityLoadBadge',
-    'trackingStatus',
     'navigationComponent',
   ],
 
