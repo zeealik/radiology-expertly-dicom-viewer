@@ -8,7 +8,6 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { PanelSliceMeasurement } from '@ohif/extension-cornerstone';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
-import FindingsNavigation from './FindingsNavigation';
 import SidePanelWithServices from '../Components/SidePanelWithServices';
 import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
@@ -862,16 +861,14 @@ function ViewerLayout({
   const viewportComponents = viewports.map(getViewportComponentData);
 
   return (
-    <div className="flex h-screen min-h-0 flex-col bg-background">
+    <div className="bg-background flex h-screen min-h-0 flex-col">
       <ViewerHeader
         hotkeysManager={hotkeysManager}
         extensionManager={extensionManager}
         servicesManager={servicesManager}
         appConfig={isStudyFeedback ? { ...appConfig, showStudyList: false } : appConfig}
       />
-      <div
-        className="bg-background relative flex min-h-0 w-full flex-1 flex-row flex-nowrap items-stretch overflow-hidden"
-      >
+      <div className="bg-background relative flex min-h-0 w-full flex-1 flex-row flex-nowrap items-stretch overflow-hidden">
         <React.Fragment>
           {!isStudyFeedback && showLoadingIndicator && (
             <LoadingIndicatorProgress className="bg-background h-full w-full" />
@@ -898,10 +895,11 @@ function ViewerLayout({
                         <div className="border-border bg-muted/50 flex h-10 shrink-0 items-center justify-between gap-2 border-b px-2">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <Icons.Clipboard className="text-primary h-4 w-4 shrink-0" />
-                            <h2 className="text-foreground truncate text-xs font-semibold">Findings</h2>
+                            <h2 className="text-foreground truncate text-xs font-semibold">
+                              Findings
+                            </h2>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <FindingsNavigation />
+                          <div className="flex shrink-0 items-center">
                             {isEvaluationAdmin && (
                               <Button
                                 size="sm"

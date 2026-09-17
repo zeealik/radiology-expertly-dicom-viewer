@@ -34,6 +34,7 @@ const Thumbnail = ({
   onReject = () => {},
   onClickUntrack = () => {},
   ThumbnailMenuItems = () => {},
+  onRename,
 }: withAppTypes): React.ReactNode => {
   // TODO: We should wrap our thumbnail to create a "DraggableThumbnail", as
   // this will still allow for "drag", even if there is no drop target for the
@@ -151,6 +152,21 @@ const Thumbnail = ({
             </div>
             {/* bottom right */}
             <div className="absolute bottom-0 right-0 flex items-center gap-[4px] p-[4px]">
+              {isInteractive && onRename && (
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-7 w-7 items-center justify-center rounded-md bg-black/50 focus-visible:outline-none focus-visible:ring-2"
+                  aria-label="Rename series"
+                  title="Rename series"
+                  onClick={event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onRename(displaySetInstanceUID, description);
+                  }}
+                >
+                  <Icons.Rename className="h-4 w-4" />
+                </button>
+              )}
               {isInteractive && (
                 <ThumbnailMenuItems
                   displaySetInstanceUID={displaySetInstanceUID}
@@ -274,6 +290,21 @@ const Thumbnail = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {isInteractive && onRename && (
+              <button
+                type="button"
+                className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-7 w-7 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+                aria-label="Rename series"
+                title="Rename series"
+                onClick={event => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onRename(displaySetInstanceUID, description);
+                }}
+              >
+                <Icons.Rename className="h-4 w-4" />
+              </button>
+            )}
             {isInteractive && (
               <ThumbnailMenuItems
                 displaySetInstanceUID={displaySetInstanceUID}
@@ -352,6 +383,7 @@ Thumbnail.propTypes = {
   onClickUntrack: PropTypes.func,
   countIcon: PropTypes.string,
   thumbnailType: PropTypes.oneOf(['thumbnail', 'thumbnailTracked', 'thumbnailNoImage']),
+  onRename: PropTypes.func,
 };
 
 export { Thumbnail };

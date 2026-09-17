@@ -150,7 +150,8 @@ export function onModeEnter({
 
   const searchParams = new URLSearchParams(window.location.search);
   const dicomAccess = searchParams.get('dicomAccess') || searchParams.get('dicomaccess');
-  const hasFindingsPanel = dicomAccess === 'evaluation-admin' || dicomAccess === 'evaluation-result';
+  const hasFindingsPanel =
+    dicomAccess === 'evaluation-admin' || dicomAccess === 'evaluation-result';
 
   for (const [key, section] of Object.entries(this.toolbarSections)) {
     const buttons =
@@ -162,35 +163,33 @@ export function onModeEnter({
     toolbarService.updateSection(key, buttons);
   }
 
-  customizationService.setCustomizations(
-    {
-      'ohif.hotkeyBindings': {
-        $push: [
-          {
-            commandName: 'setToolActive',
-            commandOptions: { toolName: 'StackScroll' },
-            label: 'Stack Scroll',
-            keys: ['s'],
-            isEditable: true,
-          },
-          {
-            commandName: 'setToolActive',
-            commandOptions: { toolName: 'WindowLevel' },
-            label: 'Window Level',
-            keys: ['w'],
-            isEditable: true,
-          },
-          {
-            commandName: 'setToolActive',
-            commandOptions: { toolName: 'Pan' },
-            label: 'Pan',
-            keys: ['p'],
-            isEditable: true,
-          },
-        ],
-      },
-    }
-  );
+  customizationService.setCustomizations({
+    'ohif.hotkeyBindings': {
+      $push: [
+        {
+          commandName: 'setToolActive',
+          commandOptions: { toolName: 'StackScroll' },
+          label: 'Stack Scroll',
+          keys: ['s'],
+          isEditable: true,
+        },
+        {
+          commandName: 'setToolActive',
+          commandOptions: { toolName: 'WindowLevel' },
+          label: 'Window Level',
+          keys: ['w'],
+          isEditable: true,
+        },
+        {
+          commandName: 'setToolActive',
+          commandOptions: { toolName: 'Pan' },
+          label: 'Pan',
+          keys: ['p'],
+          isEditable: true,
+        },
+      ],
+    },
+  });
 
   if (!this.enableSegmentationEdit) {
     customizationService.setCustomizations({
@@ -263,8 +262,14 @@ export const toolbarSections = {
     'Pan',
     'Zoom',
     'primaryDivider2',
+    'ArrowAnnotate',
+    'Length',
+    'Bidirectional',
+    'Cine',
     'Layout',
     'DisplayOptions',
+    'Capture',
+    'Reset',
     'MoreTools',
   ],
 
@@ -280,10 +285,7 @@ export const toolbarSections = {
     'thresholdMenu',
   ],
 
-  [TOOLBAR_SECTIONS.viewportActionMenu.topRight]: [
-    'modalityLoadBadge',
-    'navigationComponent',
-  ],
+  [TOOLBAR_SECTIONS.viewportActionMenu.topRight]: ['modalityLoadBadge', 'navigationComponent'],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.bottomLeft]: [],
 
@@ -300,21 +302,15 @@ export const toolbarSections = {
   ],
 
   MoreTools: [
-    'ArrowAnnotate',
-    'Length',
-    'Bidirectional',
     'EllipticalROI',
     'RectangleROI',
     'CircleROI',
     'Probe',
     'Angle',
-    'Cine',
-    'Reset',
     'rotate-right',
     'flipHorizontal',
     'invert',
     'ReferenceLines',
-    'Capture',
     'Crosshairs',
     'TrackballRotate',
     'ImageSliceSync',

@@ -5,6 +5,8 @@ import { ThumbnailList } from '../ThumbnailList';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../Accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Tooltip';
+import { Button } from '../Button';
+import { Icons } from '../Icons';
 
 const StudyItem = ({
   date,
@@ -23,19 +25,43 @@ const StudyItem = ({
   ThumbnailMenuItems,
   StudyMenuItems,
   StudyInstanceUID,
+  onRenameStudy,
+  onRenameSeries,
 }: withAppTypes) => {
   return (
     <Accordion
       type="single"
       collapsible
-      onClick={onClick}
-      onKeyDown={() => {}}
-      role="button"
-      tabIndex={0}
+      onValueChange={onClick}
       defaultValue={isActive ? 'study-item' : undefined}
     >
       <AccordionItem value="study-item">
-        <AccordionTrigger className={classnames('hover:bg-accent bg-popover group w-full rounded')}>
+        <AccordionTrigger
+          className={classnames('hover:bg-accent bg-popover group min-w-0 rounded')}
+          actions={
+            (onRenameStudy || StudyMenuItems) && (
+              <div className="bg-popover flex shrink-0 items-center pr-2">
+                {onRenameStudy && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground h-8 w-8 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+                    aria-label="Rename study"
+                    title="Rename study"
+                    onClick={event => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onRenameStudy(StudyInstanceUID, description);
+                    }}
+                  >
+                    <Icons.Rename className="h-4 w-4" />
+                  </Button>
+                )}
+                {StudyMenuItems && <StudyMenuItems StudyInstanceUID={StudyInstanceUID} />}
+              </div>
+            )
+          }
+        >
           <div className="flex h-[40px] w-full flex-row overflow-hidden">
             <div className="flex w-full flex-row items-center justify-between">
               <div className="flex min-w-0 flex-col items-start text-[13px]">
@@ -66,11 +92,6 @@ const StudyItem = ({
                 <div className="max-w-[150px] overflow-hidden text-ellipsis">{modalities}</div>
                 <div>{numInstances}</div>
               </div>
-              {StudyMenuItems && (
-                <div className="ml-2 flex items-center">
-                  <StudyMenuItems StudyInstanceUID={StudyInstanceUID} />
-                </div>
-              )}
             </div>
           </div>
         </AccordionTrigger>
@@ -88,6 +109,7 @@ const StudyItem = ({
               onClickUntrack={onClickUntrack}
               viewPreset={viewPreset}
               ThumbnailMenuItems={ThumbnailMenuItems}
+              onRenameSeries={onRenameSeries}
             />
           )}
         </AccordionContent>
@@ -112,6 +134,8 @@ StudyItem.propTypes = {
   viewPreset: PropTypes.string,
   StudyMenuItems: PropTypes.func,
   StudyInstanceUID: PropTypes.string,
+  onRenameStudy: PropTypes.func,
+  onRenameSeries: PropTypes.func,
 };
 
 export { StudyItem };

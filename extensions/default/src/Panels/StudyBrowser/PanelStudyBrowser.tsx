@@ -8,10 +8,29 @@ import { defaultActionIcons } from './constants';
 import MoreDropdownMenu from '../../Components/MoreDropdownMenu';
 import { CallbackCustomization } from 'platform/core/src/types';
 import { type TabsProps } from '@ohif/core/src/utils/createStudyBrowserTabs';
+import { callInputDialog } from '../../utils/callInputDialog';
 
 const { sortStudyInstances, formatDate, createStudyBrowserTabs } = utils;
 
 const thumbnailNoImageModalities = ['SR', 'SEG', 'RTSTRUCT', 'RTPLAN', 'RTDOSE', 'DOC', 'PMAP'];
+const nameOverridesStorageKey = 'ohif.studyBrowser.nameOverrides.v1';
+
+type NameOverrides = {
+  studies: Record<string, string>;
+  series: Record<string, string>;
+};
+
+const getStoredNameOverrides = (): NameOverrides => {
+  try {
+    const storedOverrides = JSON.parse(window.localStorage.getItem(nameOverridesStorageKey) || '');
+    return {
+      studies: storedOverrides?.studies || {},
+      series: storedOverrides?.series || {},
+    };
+  } catch {
+    return { studies: {}, series: {} };
+  }
+};
 
 /**
  * Study Browser component that displays and manages studies and their display sets
@@ -29,7 +48,8 @@ function PanelStudyBrowser({
   StudyMenuItems: StudyMenuItemsProp,
 }) {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
-  const { displaySetService, customizationService } = servicesManager.services;
+  const { displaySetService, customizationService, uiDialogService, uiNotificationService } =
+    servicesManager.services;
   const navigate = useNavigate();
   const studyMode =
     (customizationService.getCustomization('studyBrowser.studyMode') as string) || 'all';
@@ -51,6 +71,7 @@ function PanelStudyBrowser({
   const [displaySetsLoadingState, setDisplaySetsLoadingState] = useState({});
   const [thumbnailImageSrcMap, setThumbnailImageSrcMap] = useState({});
   const [jumpToDisplaySet, setJumpToDisplaySet] = useState(null);
+  const [nameOverrides, setNameOverrides] = useState<NameOverrides>(getStoredNameOverrides);
 
   const [viewPresets, setViewPresets] = useState(
     customizationService.getCustomization('studyBrowser.viewPresets')
@@ -120,10 +141,22 @@ function PanelStudyBrowser({
 
       fetchedStudiesRef.current.add(StudyInstanceUID);
 
-      // current study qido
-      const qidoForStudyUID = await dataSource.query.studies.search({
-        studyInstanceUid: StudyInstanceUID,
-      });
+      let qidoForStudyUID;
+      try {
+        qidoForStudyUID = await dataSource.query.studies.search({
+          studyInstanceUid: StudyInstanceUID,
+        });
+      } catch (error) {
+        fetchedStudiesRef.current.delete(StudyInstanceUID);
+        console.warn(`Unable to load study browser metadata for ${StudyInstanceUID}`, error);
+        uiNotificationService?.show({
+          title: 'Study browser',
+          message: 'Study details could not be refreshed. The loaded images remain available.',
+          type: 'warning',
+          duration: 5000,
+        });
+        return;
+      }
 
       let qidoStudiesForPatient = qidoForStudyUID;
 
@@ -158,7 +191,7 @@ function PanelStudyBrowser({
     }
 
     StudyInstanceUIDs.forEach(sid => fetchStudiesForPatient(sid));
-  }, [StudyInstanceUIDs, dataSource, getStudiesForPatientByMRN, navigate]);
+  }, [StudyInstanceUIDs, dataSource, getStudiesForPatientByMRN, navigate, uiNotificationService]);
 
   // ~~ Initial Thumbnails
   useEffect(() => {
@@ -344,7 +377,81 @@ function PanelStudyBrowser({
     customMapDisplaySets,
   ]);
 
-  const tabs = createStudyBrowserTabs(StudyInstanceUIDs, studyDisplayList, displaySets);
+  const studyDisplayListWithNames = studyDisplayList.map(study => ({
+    ...study,
+    description: nameOverrides.studies[study.studyInstanceUid] || study.description,
+  }));
+  const displaySetsWithNames = displaySets.map(displaySet => {
+    const sourceDisplaySet = displaySetService.getDisplaySetByUID(displaySet.displaySetInstanceUID);
+    const seriesKey = sourceDisplaySet?.SeriesInstanceUID || displaySet.displaySetInstanceUID;
+
+    return {
+      ...displaySet,
+      description: nameOverrides.series[seriesKey] || displaySet.description,
+    };
+  });
+  const tabs = createStudyBrowserTabs(
+    StudyInstanceUIDs,
+    studyDisplayListWithNames,
+    displaySetsWithNames
+  );
+
+  const updateNameOverride = useCallback(
+    (type: keyof NameOverrides, uid: string, value: string) => {
+      setNameOverrides(current => {
+        const next = {
+          ...current,
+          [type]: { ...current[type], [uid]: value },
+        };
+        try {
+          window.localStorage.setItem(nameOverridesStorageKey, JSON.stringify(next));
+        } catch {
+          // The alias still applies for this session when browser storage is unavailable.
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const promptForName = useCallback(
+    async ({ title, currentName, onSave }) => {
+      const value = await callInputDialog({
+        uiDialogService,
+        title,
+        defaultValue: currentName || '',
+        placeholder: `Enter ${title.toLowerCase()}`,
+      });
+      const trimmedValue = value?.trim();
+      if (trimmedValue) {
+        onSave(trimmedValue);
+      }
+    },
+    [uiDialogService]
+  );
+
+  const handleRenameStudy = useCallback(
+    (studyInstanceUID: string, currentName: string) =>
+      promptForName({
+        title: 'Rename study',
+        currentName,
+        onSave: value => updateNameOverride('studies', studyInstanceUID, value),
+      }),
+    [promptForName, updateNameOverride]
+  );
+
+  const handleRenameSeries = useCallback(
+    (displaySetInstanceUID: string, currentName: string) => {
+      const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      const seriesKey = displaySet?.SeriesInstanceUID || displaySetInstanceUID;
+      return promptForName({
+        title: 'Rename series',
+        currentName,
+        onSave: value => updateNameOverride('series', seriesKey, value),
+      });
+    },
+    [displaySetService, promptForName, updateNameOverride]
+  );
 
   // TODO: Should not fire this on "close"
   function _handleStudyClick(StudyInstanceUID) {
@@ -446,6 +553,8 @@ function PanelStudyBrowser({
             menuItemsKey: 'studyBrowser.studyMenuItems',
           })
         }
+        onRenameStudy={handleRenameStudy}
+        onRenameSeries={handleRenameSeries}
       />
     </>
   );

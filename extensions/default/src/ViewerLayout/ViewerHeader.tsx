@@ -2,16 +2,14 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Header, Icons, useModal } from '@ohif/ui-next';
+import { Header, useModal } from '@ohif/ui-next';
 import { useSystem } from '@ohif/core';
 import { Toolbar } from '../Toolbar/Toolbar';
-import HeaderPatientInfo from './HeaderPatientInfo';
-import { PatientInfoVisibility } from './HeaderPatientInfo/HeaderPatientInfo';
 import { preserveQueryParameters } from '@ohif/app';
 import { Types } from '@ohif/core';
 
 function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }>) {
-  const { servicesManager, extensionManager, commandsManager } = useSystem();
+  const { servicesManager, extensionManager } = useSystem();
   const { customizationService } = servicesManager.services;
 
   const navigate = useNavigate();
@@ -88,42 +86,6 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
       onClickReturnButton={onClickReturnButton}
       WhiteLabeling={appConfig.whiteLabeling}
       Secondary={<Toolbar buttonSection="secondary" />}
-      PatientInfo={
-        appConfig.showPatientInfo !== PatientInfoVisibility.DISABLED && (
-          <HeaderPatientInfo
-            servicesManager={servicesManager}
-            appConfig={appConfig}
-          />
-        )
-      }
-      UndoRedo={
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Undo"
-            title="Undo"
-            className="text-muted-foreground hover:bg-accent hover:text-foreground h-10 w-10 rounded-lg transition-colors duration-150"
-            onClick={() => {
-              commandsManager.run('undo');
-            }}
-          >
-            <Icons.Undo className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Redo"
-            title="Redo"
-            className="text-muted-foreground hover:bg-accent hover:text-foreground h-10 w-10 rounded-lg transition-colors duration-150"
-            onClick={() => {
-              commandsManager.run('redo');
-            }}
-          >
-            <Icons.Redo className="h-6 w-6" />
-          </Button>
-        </div>
-      }
     >
       <div className="relative flex justify-center gap-[4px]">
         <Toolbar buttonSection="primary" />

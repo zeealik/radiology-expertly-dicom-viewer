@@ -29,7 +29,6 @@ interface HeaderProps {
   };
   PatientInfo?: ReactNode;
   Secondary?: ReactNode;
-  UndoRedo?: ReactNode;
 }
 
 function Header({
@@ -40,7 +39,6 @@ function Header({
   isSticky = false,
   WhiteLabeling,
   PatientInfo,
-  UndoRedo,
   Secondary,
   ...props
 }: HeaderProps): ReactNode {
@@ -65,7 +63,7 @@ function Header({
               {isReturnEnabled && (
                 <button
                   type="button"
-                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-9 w-9 flex-none cursor-pointer items-center justify-center rounded-lg transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2"
+                  className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring flex h-9 w-9 flex-none cursor-pointer items-center justify-center rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 active:scale-[0.97]"
                   onClick={onClickReturn}
                   aria-label="Return to work list"
                   data-cy="return-to-work-list"
@@ -97,10 +95,12 @@ function Header({
           </div>
           <div className="min-w-0 flex-1 md:hidden" />
           <div className="flex flex-none select-none items-center">
-            {UndoRedo}
-            <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
-            {PatientInfo}
-            <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
+            {PatientInfo && (
+              <>
+                {PatientInfo}
+                <div className="bg-border/60 mx-1.5 h-5 w-px md:mx-2"></div>
+              </>
+            )}
             <div className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
