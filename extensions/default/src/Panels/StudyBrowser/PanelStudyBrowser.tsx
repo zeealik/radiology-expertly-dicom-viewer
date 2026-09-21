@@ -55,7 +55,9 @@ function PanelStudyBrowser({
   const searchParams = new URLSearchParams(location.search);
   const hideStudyNames =
     searchParams.get('hideStudyNames') === '1' ||
-    searchParams.get('dicomAccess') === 'evaluation-attempt';
+    ['evaluation-admin', 'evaluation-attempt', 'evaluation-result'].includes(
+      searchParams.get('dicomAccess') || ''
+    );
   const studyMode =
     (customizationService.getCustomization('studyBrowser.studyMode') as string) || 'all';
 

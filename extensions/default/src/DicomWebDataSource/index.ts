@@ -42,7 +42,7 @@ const shouldHideStudyNames = () => {
   const searchParams = new URLSearchParams(window.location.search);
   return (
     searchParams.get('hideStudyNames') === '1' ||
-    searchParams.get('dicomAccess') === 'evaluation-attempt'
+    evaluationAccessModes.has(searchParams.get('dicomAccess') || '')
   );
 };
 

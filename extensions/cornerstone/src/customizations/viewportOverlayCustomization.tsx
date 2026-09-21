@@ -6,7 +6,9 @@ const shouldHideStudyNames = () => {
   const searchParams = new URLSearchParams(window.location.search);
   return (
     searchParams.get('hideStudyNames') === '1' ||
-    searchParams.get('dicomAccess') === 'evaluation-attempt'
+    ['evaluation-admin', 'evaluation-attempt', 'evaluation-result'].includes(
+      searchParams.get('dicomAccess') || ''
+    )
   );
 };
 
