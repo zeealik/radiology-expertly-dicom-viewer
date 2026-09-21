@@ -26,6 +26,7 @@ async function promptSaveReport({ servicesManager, commandsManager, extensionMan
     ),
     defaultSaveTitle = 'Study Findings',
     skipPrompt = false,
+    referencedImageId,
   } = ctx;
   let displaySetInstanceUIDs;
 
@@ -70,6 +71,9 @@ async function promptSaveReport({ servicesManager, commandsManager, extensionMan
             measurementData,
             dataSource: dataSourceName,
             additionalFindingTypes: ['ArrowAnnotate'],
+            // Lets a report with no measurements still name the image it was reviewed against,
+            // which is what an SR derives from.
+            referencedImageId,
             options: {
               SeriesDescription,
               SeriesNumber: 1 + priorSeriesNumber,

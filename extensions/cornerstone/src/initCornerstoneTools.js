@@ -51,6 +51,7 @@ import * as polySeg from '@cornerstonejs/polymorphic-segmentation';
 import CalibrationLineTool from './tools/CalibrationLineTool';
 import ImageOverlayViewerTool from './tools/ImageOverlayViewerTool';
 import StackScrollTool from './tools/StackScrollTool';
+import withMillimetreTextLines from './utils/withMillimetreTextLines';
 
 export default function initCornerstoneTools(configuration = {}) {
   CrosshairsTool.isAnnotation = false;
@@ -76,18 +77,18 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(StackScrollTool);
   addTool(VolumeRotateTool);
   addTool(ZoomTool);
-  addTool(ProbeTool);
+  addTool(withMillimetreTextLines(ProbeTool));
   addTool(MIPJumpToClickTool);
-  addTool(LengthTool);
-  addTool(RectangleROITool);
+  addTool(withMillimetreTextLines(LengthTool));
+  addTool(withMillimetreTextLines(RectangleROITool));
   addTool(RectangleROIThresholdTool);
-  addTool(EllipticalROITool);
-  addTool(CircleROITool);
-  addTool(BidirectionalTool);
+  addTool(withMillimetreTextLines(EllipticalROITool));
+  addTool(withMillimetreTextLines(CircleROITool));
+  addTool(withMillimetreTextLines(BidirectionalTool));
   addTool(ArrowAnnotateTool);
-  addTool(DragProbeTool);
-  addTool(AngleTool);
-  addTool(CobbAngleTool);
+  addTool(withMillimetreTextLines(DragProbeTool));
+  addTool(withMillimetreTextLines(AngleTool));
+  addTool(withMillimetreTextLines(CobbAngleTool));
   addTool(MagnifyTool);
   addTool(CrosshairsTool);
   addTool(RectangleScissorsTool);
@@ -100,11 +101,11 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(TrackballRotateTool);
   addTool(ImageOverlayViewerTool);
   addTool(AdvancedMagnifyTool);
-  addTool(UltrasoundDirectionalTool);
+  addTool(withMillimetreTextLines(UltrasoundDirectionalTool));
   addTool(UltrasoundPleuraBLineTool);
-  addTool(PlanarFreehandROITool);
-  addTool(SplineROITool);
-  addTool(LivewireContourTool);
+  addTool(withMillimetreTextLines(PlanarFreehandROITool));
+  addTool(withMillimetreTextLines(SplineROITool));
+  addTool(withMillimetreTextLines(LivewireContourTool));
   addTool(OrientationMarkerTool);
   addTool(WindowLevelRegionTool);
   addTool(PlanarFreehandContourSegmentationTool);
@@ -117,13 +118,53 @@ export default function initCornerstoneTools(configuration = {}) {
   addTool(SculptorTool);
   addTool(SplineContourSegmentationTool);
   addTool(LabelMapEditWithContourTool);
-  // Modify annotation tools to use dashed lines on SR
+  // Annotations are drawn in the viewer's own accent colour rather than Cornerstone's default
+  // yellow-on-green, so a finding reads as part of the product instead of a debug overlay.
+  // Greyscale and colour-Doppler ultrasound both sit under these marks, so the palette avoids
+  // the reds and blues a Doppler overlay already uses.
+  const ACCENT = 'rgb(20, 166, 245)';
+  const ACCENT_HIGHLIGHTED = 'rgb(98, 196, 248)';
+  const ACCENT_SELECTED = 'rgb(48, 232, 125)';
+  const ACCENT_LOCKED = 'rgb(148, 163, 184)';
+
   const annotationStyle = {
-    textBoxFontSize: '15px',
-    lineWidth: '3',
+    color: ACCENT,
+    colorHighlighted: ACCENT_HIGHLIGHTED,
+    colorSelected: ACCENT_SELECTED,
+    colorLocked: ACCENT_LOCKED,
+
+    // 2px reads as a deliberate line at the sizes these images are viewed at; the previous 3px
+    // was heavy enough to hide the tissue boundary the annotation is meant to mark.
+    lineWidth: '2',
     lineDash: '',
-    textBoxLinkLineWidth: '0',
-    textBoxLinkLineDash: '',
+
+    // A drop shadow is what keeps a thin line legible over both the bright and the dark parts
+    // of an ultrasound sector.
+    shadow: true,
+
+    textBoxFontFamily: 'Inter, Helvetica Neue, Helvetica, Arial, sans-serif',
+    textBoxFontSize: '13px',
+    textBoxColor: 'rgb(226, 240, 252)',
+    textBoxColorHighlighted: 'rgb(255, 255, 255)',
+    textBoxColorSelected: 'rgb(255, 255, 255)',
+    textBoxColorLocked: ACCENT_LOCKED,
+
+    // Text sits on its own translucent plate rather than directly on the image, which is what
+    // makes the statistics readable over speckle without a heavier font.
+    textBoxBackground: 'rgba(11, 22, 34, 0.72)',
+    textBoxShadow: true,
+
+    // Rounded corners and a little breathing room around the text, so the plate reads as a chip
+    // rather than a hard-edged box cut out of the image.
+    textBoxBorderRadius: 4,
+    textBoxMargin: 4,
+
+    // The leader line back to the annotation is restored, but hairline and dashed so it reads as
+    // a connection rather than another measurement stroke.
+    textBoxLinkLineWidth: '1',
+    textBoxLinkLineDash: '2,3',
+
+    markerSize: '8',
   };
 
   const defaultStyles = annotation.config.style.getDefaultToolStyles();
@@ -134,8 +175,9 @@ export default function initCornerstoneTools(configuration = {}) {
     },
     ArrowAnnotate: {
       ...defaultStyles.ArrowAnnotate,
-      lineWidth: '3',
-      lineDash: '',
+      ...annotationStyle,
+      // An arrow points straight at what it labels, so a leader line back to the text box would
+      // only duplicate the arrow itself.
       textBoxLinkLineWidth: '0',
       textBoxLinkLineDash: '',
     },

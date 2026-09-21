@@ -187,6 +187,33 @@ export function onModeEnter({
           keys: ['p'],
           isEditable: true,
         },
+        // Undo/redo ship bound to ctrl+z and ctrl+y, which leaves Mac users without the
+        // shortcut they actually reach for. Mousetrap's `mod` resolves to cmd on macOS and
+        // ctrl everywhere else, so one binding covers both platforms. Re-registering a command
+        // rebinds it, so these supersede the upstream defaults rather than competing with them.
+        {
+          commandName: 'undo',
+          label: 'Undo',
+          keys: ['mod+z'],
+          isEditable: true,
+        },
+        {
+          commandName: 'redo',
+          label: 'Redo',
+          keys: ['mod+shift+z'],
+          isEditable: true,
+        },
+        // The Windows-style redo, kept as a second binding. `commandOptions` only exists to give
+        // this entry a distinct hash — hotkeys are keyed on command plus options, and `keys` is
+        // joined into a single chord rather than treated as alternatives, so the same command
+        // needs a second entry to carry a second shortcut. `redo` ignores its arguments.
+        {
+          commandName: 'redo',
+          commandOptions: { binding: 'ctrl+y' },
+          label: 'Redo',
+          keys: ['mod+y'],
+          isEditable: true,
+        },
       ],
     },
   });

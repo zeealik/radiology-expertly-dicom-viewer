@@ -25,11 +25,35 @@ interface Options {
  * @param options Naturalized DICOM JSON headers to merge into the displaySet.
  *
  */
-const _generateReport = (measurementData, additionalFindingTypes, options: Options = {}) => {
-  const filteredToolState = getFilteredCornerstoneToolState(
+/**
+ * Builds the tool state for a report that has no measurements in it.
+ *
+ * A DICOM SR is a *derived* object: `MeasurementReport.generateReport` collects its derivation
+ * source datasets while walking the referenced images of each annotation, and dcmjs then reads
+ * `derivationSourceDatasets[0]`. With no annotations that list is empty and construction throws
+ * on `_vrMap` of undefined, so an empty report cannot be built from nothing at all.
+ *
+ * Keying the tool state on an image the user is actually looking at, with no tools under it,
+ * gives the report exactly one derivation source and zero measurement groups — a valid SR that
+ * records "this study was reviewed" without claiming any findings.
+ */
+const _generateEmptyToolState = referencedImageId =>
+  referencedImageId ? { [referencedImageId]: {} } : {};
+
+const _generateReport = (
+  measurementData,
+  additionalFindingTypes,
+  options: Options = {},
+  referencedImageId?: string
+) => {
+  const measuredToolState = getFilteredCornerstoneToolState(
     measurementData,
     additionalFindingTypes
   );
+
+  const filteredToolState = Object.keys(measuredToolState).length
+    ? measuredToolState
+    : _generateEmptyToolState(referencedImageId);
 
   const report = MeasurementReport.generateReport(filteredToolState, metaData, options);
 
@@ -83,6 +107,7 @@ const commandsModule = (props: withAppTypes) => {
       dataSource,
       additionalFindingTypes,
       options = {},
+      referencedImageId,
     }) => {
       log.info('[DICOMSR] storeMeasurements');
 
@@ -100,14 +125,16 @@ const commandsModule = (props: withAppTypes) => {
         const naturalizedReport = _generateReport(
           measurementData,
           additionalFindingTypes,
-          options
+          options,
+          referencedImageId
         );
 
         const { ContentSequence } = naturalizedReport;
-        // The content sequence has 5 or more elements, of which
-        // the `[4]` element contains the annotation data, so this is
-        // checking that there is some annotation data present.
-        if (!ContentSequence?.[4]?.ContentSequence?.length) {
+        // The content sequence has 5 or more elements, of which the `[4]` element contains the
+        // annotation data. A report that was asked to carry measurements must actually carry
+        // them — an empty one there means serialization dropped them silently. A deliberately
+        // empty report has nothing to check, so it is allowed through.
+        if (measurementData?.length && !ContentSequence?.[4]?.ContentSequence?.length) {
           console.log('naturalizedReport missing imaging content', naturalizedReport);
           throw new Error('Invalid report, no content');
         }

@@ -237,16 +237,21 @@ function ViewerLayout({
     }
 
     const measurementFilter = measurement => measurement?.referenceStudyUID === StudyInstanceUID;
-    const measurements = measurementService?.getMeasurements?.(measurementFilter) || [];
 
-    if (!measurements.length) {
-      uiNotificationService?.show({
-        title: 'Save Finding',
-        message: 'Add at least one annotation before saving.',
-        type: 'info',
-      });
-      return;
-    }
+    // Reviewing a study and finding nothing is a real result, so an empty save is allowed. A
+    // DICOM SR is derived from an image, though, so a report with no annotations still has to
+    // name the image it was reviewed against — see `_generateReport` in the SR extension.
+    const activeViewportId =
+      viewportGridService?.getActiveViewportId?.() ||
+      viewportGridService?.getState?.()?.activeViewportId;
+    const activeViewport = activeViewportId
+      ? cornerstoneViewportService?.getCornerstoneViewport?.(activeViewportId)
+      : undefined;
+    // `getCurrentImageId` is declared on the stack and volume viewports rather than the base
+    // `Viewport` type, so it is reached through the optional call the other call sites use.
+    const referencedImageId = (
+      activeViewport as { getCurrentImageId?: () => string | undefined }
+    )?.getCurrentImageId?.();
 
     try {
       await commandsManager.run('promptSaveReport', {
@@ -254,6 +259,7 @@ function ViewerLayout({
         measurementFilter,
         defaultSaveTitle: 'Study Findings',
         skipPrompt: true,
+        referencedImageId,
       });
     } catch (error) {
       uiNotificationService?.show({
@@ -262,7 +268,13 @@ function ViewerLayout({
         type: 'error',
       });
     }
-  }, [commandsManager, measurementService, studyInstanceUIDs, uiNotificationService]);
+  }, [
+    commandsManager,
+    cornerstoneViewportService,
+    studyInstanceUIDs,
+    uiNotificationService,
+    viewportGridService,
+  ]);
 
   useEffect(() => {
     if (!isReadOnlyViewer || !toolGroupService) {
