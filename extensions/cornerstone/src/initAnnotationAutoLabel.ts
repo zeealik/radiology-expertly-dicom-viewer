@@ -26,6 +26,32 @@ const UNLABELLED_TOOLS = new Set([
   'PlanarFreehandContourSegmentation',
 ]);
 
+/**
+ * Resolves once no naming dialog is on screen.
+ *
+ * Auto-save also runs off MEASUREMENT_ADDED, so without this the report is serialized from an
+ * annotation the user is still naming — the save and the dialog race, and the save usually
+ * wins. Anything that persists measurements awaits this first so the label is part of what gets
+ * written. It is module state because the two live in different extensions with no shared
+ * service between them.
+ */
+let labellingSettled: Promise<unknown> = Promise.resolve();
+
+export function whenLabellingSettled(): Promise<unknown> {
+  return labellingSettled;
+}
+
+/**
+ * Folds a dialog this module did not open into the same barrier, so a caller waiting on
+ * `whenLabellingSettled` waits for that one too. ArrowAnnotate's prompt is opened by
+ * Cornerstone rather than by this module, and registers itself through here.
+ */
+export function trackExternalLabelPrompt<T>(prompt: Promise<T>): Promise<T> {
+  labellingSettled = labellingSettled.then(() => prompt).catch(() => undefined);
+
+  return prompt;
+}
+
 function shouldPromptForLabel(measurement): boolean {
   const toolName = measurement?.metadata?.toolName ?? measurement?.toolName;
 
@@ -47,16 +73,15 @@ export default function initAnnotationAutoLabel({ servicesManager, commandsManag
     return () => {};
   }
 
-  // The label dialog is modal, so two annotations completed in quick succession would otherwise
-  // race for it. Queueing keeps one prompt on screen at a time, in the order drawn.
-  let pending: Promise<unknown> = Promise.resolve();
-
   const promptForLabel = ({ measurement }) => {
     if (!shouldPromptForLabel(measurement)) {
       return;
     }
 
-    pending = pending
+    // The label dialog is modal, so two annotations completed in quick succession would
+    // otherwise race for it. Chaining onto the same promise that gates auto-save keeps one
+    // prompt on screen at a time, in the order drawn.
+    labellingSettled = labellingSettled
       .then(() => commandsManager.run('setMeasurementLabel', { uid: measurement.uid }))
       .catch(error => {
         console.warn('Failed to prompt for an annotation name:', error);

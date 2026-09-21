@@ -1,4 +1,7 @@
-import initAnnotationAutoLabel from './initAnnotationAutoLabel';
+import initAnnotationAutoLabel, {
+  whenLabellingSettled,
+  trackExternalLabelPrompt,
+} from './initAnnotationAutoLabel';
 
 jest.mock('@ohif/extension-default/src/ViewerLayout/studyParams', () => ({
   isReadOnlyViewerAccess: jest.fn(() => false),
@@ -172,6 +175,80 @@ describe('initAnnotationAutoLabel', () => {
     expect(harness.commandsManager.run).toHaveBeenLastCalledWith('setMeasurementLabel', {
       uid: 'measurement-2',
     });
+  });
+
+  it('holds the labelling barrier open until the prompt is answered', async () => {
+    const harness = createHarness();
+    let answerPrompt: () => void = () => {};
+    let barrierSettled = false;
+
+    (harness.commandsManager.run as jest.Mock).mockImplementation(
+      () => new Promise<void>(resolve => (answerPrompt = resolve))
+    );
+
+    initAnnotationAutoLabel(harness);
+    harness.emitAdded({ uid: 'measurement-1', toolName: 'Length', label: '' });
+
+    whenLabellingSettled().then(() => (barrierSettled = true));
+    await flush();
+
+    // Auto-save waits on this promise, so it must not resolve while the dialog is open.
+    expect(barrierSettled).toBe(false);
+
+    answerPrompt();
+    await flush();
+
+    expect(barrierSettled).toBe(true);
+  });
+
+  it('resolves the barrier immediately when no dialog is open', async () => {
+    const harness = createHarness();
+    initAnnotationAutoLabel(harness);
+
+    // A tool that never prompts must not leave a save waiting forever.
+    harness.emitAdded({ uid: 'measurement-1', toolName: 'ArrowAnnotate', label: '' });
+
+    let settled = false;
+    whenLabellingSettled().then(() => (settled = true));
+    await flush();
+
+    expect(settled).toBe(true);
+  });
+
+  it('waits for a prompt this module did not open', async () => {
+    let answerPrompt: () => void = () => {};
+    let barrierSettled = false;
+
+    const externalPrompt = new Promise<string>(resolve => {
+      answerPrompt = () => resolve('typed label');
+    });
+
+    trackExternalLabelPrompt(externalPrompt);
+    whenLabellingSettled().then(() => (barrierSettled = true));
+    await flush();
+
+    expect(barrierSettled).toBe(false);
+
+    answerPrompt();
+    await flush();
+
+    expect(barrierSettled).toBe(true);
+  });
+
+  it('releases the barrier when a prompt fails, so saving is never wedged', async () => {
+    const harness = createHarness();
+    (harness.commandsManager.run as jest.Mock).mockRejectedValue(new Error('dialog unavailable'));
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    initAnnotationAutoLabel(harness);
+    harness.emitAdded({ uid: 'measurement-1', toolName: 'Length', label: '' });
+
+    let settled = false;
+    whenLabellingSettled().then(() => (settled = true));
+    await flush();
+
+    // A rejected prompt must still release the barrier, or auto-save would hang forever.
+    expect(settled).toBe(true);
   });
 
   it('unsubscribes when torn down', () => {

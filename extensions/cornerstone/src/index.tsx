@@ -325,6 +325,13 @@ export {
   useMeasurementTracking,
 };
 
+// Lets anything that persists measurements wait for an open naming dialog before serializing,
+// so an annotation is saved with the label the user is still typing.
+export {
+  whenLabellingSettled,
+  trackExternalLabelPrompt,
+} from './initAnnotationAutoLabel';
+
 // Export constants
 export { VOLUME_LOADER_SCHEME, DYNAMIC_VOLUME_LOADER_SCHEME } from './constants';
 export default cornerstoneExtension;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { ViewportActionArrows } from '@ohif/ui-next';
-import { OHIFCornerstoneViewport } from '@ohif/extension-cornerstone';
+import { OHIFCornerstoneViewport, whenLabellingSettled } from '@ohif/extension-cornerstone';
 
 import { annotation } from '@cornerstonejs/tools';
 import { useTrackedMeasurements } from './../getContextModule';
@@ -173,13 +173,21 @@ function TrackedCornerstoneViewport(
               !autoSavedMeasurementUIDsRef.current.has(measurementId)
             ) {
               autoSavedMeasurementUIDsRef.current.add(measurementId);
-              commandsManager.run('promptSaveReport', {
-                StudyInstanceUID,
-                measurementFilter: (measurement: { referenceStudyUID?: string }) =>
-                  measurement?.referenceStudyUID === StudyInstanceUID,
-                defaultSaveTitle: 'Study Findings',
-                skipPrompt: true,
-              });
+
+              // Naming an annotation runs off this same event, so serializing immediately
+              // would capture the measurement while its dialog is still open — the report is
+              // written without the label, and a report built from a half-finished annotation
+              // fails outright. Waiting for the dialog to close means one save, with the name
+              // in it. With no dialog open this resolves immediately.
+              whenLabellingSettled().then(() =>
+                commandsManager.run('promptSaveReport', {
+                  StudyInstanceUID,
+                  measurementFilter: (measurement: { referenceStudyUID?: string }) =>
+                    measurement?.referenceStudyUID === StudyInstanceUID,
+                  defaultSaveTitle: 'Study Findings',
+                  skipPrompt: true,
+                })
+              );
             }
           }
         }).unsubscribe

@@ -44,6 +44,7 @@ import {
   useSelectedSegmentationsForViewportStore,
 } from './stores';
 import { toolNames } from './initCornerstoneTools';
+import { trackExternalLabelPrompt } from './initAnnotationAutoLabel';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
@@ -857,23 +858,29 @@ function commandsModule({
       const labelConfig = customizationService.getCustomization('measurementLabels');
       const renderContent = customizationService.getCustomization('ui.labellingComponent');
 
+      // Cornerstone opens this dialog itself, so it is registered with the shared labelling
+      // barrier for auto-save to wait on — the same way every other tool's prompt is.
       if (!labelConfig) {
-        const label = await callInputDialog({
-          uiDialogService,
-          title: i18n.t('Tools:Edit Arrow Text'),
-          placeholder: data?.data?.label || i18n.t('Tools:Enter new text'),
-          defaultValue: data?.data?.label || '',
-        });
+        const label = await trackExternalLabelPrompt(
+          callInputDialog({
+            uiDialogService,
+            title: i18n.t('Tools:Edit Arrow Text'),
+            placeholder: data?.data?.label || i18n.t('Tools:Enter new text'),
+            defaultValue: data?.data?.label || '',
+          })
+        );
 
         callback?.(label);
         return;
       }
 
-      const value = await callInputDialogAutoComplete({
-        uiDialogService,
-        labelConfig,
-        renderContent,
-      });
+      const value = await trackExternalLabelPrompt(
+        callInputDialogAutoComplete({
+          uiDialogService,
+          labelConfig,
+          renderContent,
+        })
+      );
       callback?.(value);
     },
 
