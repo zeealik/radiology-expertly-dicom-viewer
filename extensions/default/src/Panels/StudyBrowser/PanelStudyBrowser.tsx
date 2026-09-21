@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useImageViewer } from '@ohif/ui-next';
 import { useSystem, utils } from '@ohif/core';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useViewportGrid, StudyBrowser, Separator } from '@ohif/ui-next';
 import { PanelStudyBrowserHeader } from './PanelStudyBrowserHeader';
 import { defaultActionIcons } from './constants';
@@ -51,6 +51,11 @@ function PanelStudyBrowser({
   const { displaySetService, customizationService, uiDialogService, uiNotificationService } =
     servicesManager.services;
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const hideStudyNames =
+    searchParams.get('hideStudyNames') === '1' ||
+    searchParams.get('dicomAccess') === 'evaluation-attempt';
   const studyMode =
     (customizationService.getCustomization('studyBrowser.studyMode') as string) || 'all';
 
@@ -379,7 +384,9 @@ function PanelStudyBrowser({
 
   const studyDisplayListWithNames = studyDisplayList.map(study => ({
     ...study,
-    description: nameOverrides.studies[study.studyInstanceUid] || study.description,
+    description: hideStudyNames
+      ? ''
+      : nameOverrides.studies[study.studyInstanceUid] || study.description,
   }));
   const displaySetsWithNames = displaySets.map(displaySet => {
     const sourceDisplaySet = displaySetService.getDisplaySetByUID(displaySet.displaySetInstanceUID);
@@ -387,7 +394,7 @@ function PanelStudyBrowser({
 
     return {
       ...displaySet,
-      description: nameOverrides.series[seriesKey] || displaySet.description,
+      description: hideStudyNames ? '' : nameOverrides.series[seriesKey] || displaySet.description,
     };
   });
   const tabs = createStudyBrowserTabs(
@@ -553,8 +560,8 @@ function PanelStudyBrowser({
             menuItemsKey: 'studyBrowser.studyMenuItems',
           })
         }
-        onRenameStudy={handleRenameStudy}
-        onRenameSeries={handleRenameSeries}
+        onRenameStudy={hideStudyNames ? undefined : handleRenameStudy}
+        onRenameSeries={hideStudyNames ? undefined : handleRenameSeries}
       />
     </>
   );

@@ -34,6 +34,30 @@ const evaluationAccessModes = new Set([
   'evaluation-result',
 ]);
 
+const shouldHideStudyNames = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  return (
+    searchParams.get('hideStudyNames') === '1' ||
+    searchParams.get('dicomAccess') === 'evaluation-attempt'
+  );
+};
+
+const withoutStudyNames = instance => {
+  if (!shouldHideStudyNames()) {
+    return instance;
+  }
+
+  return {
+    ...instance,
+    StudyDescription: '',
+    SeriesDescription: '',
+  };
+};
+
 const getEvaluationDicomWebRoot = () => {
   if (typeof window === 'undefined') {
     return;
@@ -223,7 +247,7 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
           // which the server expects Accept: application/dicom+json will still include that in the
           // header.
           return {
-            ...authorizationHeader
+            ...authorizationHeader,
           };
         }
       };
@@ -501,7 +525,9 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
       );
 
       // first naturalize the data
-      const naturalizedInstancesMetadata = data.map(naturalizeDataset);
+      const naturalizedInstancesMetadata = data.map(item =>
+        withoutStudyNames(naturalizeDataset(item))
+      );
 
       const seriesSummaryMetadata = {};
       const instancesPerSeries = {};

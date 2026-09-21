@@ -268,7 +268,6 @@ export const toolbarSections = {
     'Cine',
     'Layout',
     'DisplayOptions',
-    'Capture',
     'Reset',
     'MoreTools',
   ],

@@ -3,6 +3,7 @@ import { getIsLocked } from './utils/getIsLocked';
 import { getIsVisible } from './utils/getIsVisible';
 import getSOPInstanceAttributes from './utils/getSOPInstanceAttributes';
 import { utils } from '@ohif/core';
+import getDisplayUnit from './utils/getDisplayUnit';
 
 const Length = {
   toAnnotation: measurement => {},
@@ -197,7 +198,7 @@ function getDisplayText(mappedAnnotations, displaySet) {
     return displayText;
   }
   const roundedLength = utils.roundNumber(length, 2);
-  displayText.primary.push(`${roundedLength} ${unit}`);
+  displayText.primary.push(`${roundedLength} ${getDisplayUnit(unit)}`);
   displayText.secondary.push(`S: ${SeriesNumber}${instanceText}${frameText}`);
 
   return displayText;

@@ -25,6 +25,7 @@ import initWADOImageLoader from './initWADOImageLoader';
 import initCornerstoneTools from './initCornerstoneTools';
 
 import { connectToolsToMeasurementService } from './initMeasurementService';
+import initAnnotationAutoLabel from './initAnnotationAutoLabel';
 import initCineService from './initCineService';
 import initStudyPrefetcherService from './initStudyPrefetcherService';
 import interleaveCenterLoader from './utils/interleaveCenterLoader';
@@ -203,6 +204,10 @@ export default async function init({
     commandsManager,
     extensionManager,
   });
+
+  // Every annotation tool asks for a name the moment it is drawn, the way ArrowAnnotate
+  // already does, so findings never land in the panel as "(empty)".
+  initAnnotationAutoLabel({ servicesManager, commandsManager });
 
   initCineService(servicesManager);
   initStudyPrefetcherService(servicesManager);

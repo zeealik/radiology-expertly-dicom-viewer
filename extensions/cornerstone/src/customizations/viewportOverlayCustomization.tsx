@@ -1,3 +1,15 @@
+const shouldHideStudyNames = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  return (
+    searchParams.get('hideStudyNames') === '1' ||
+    searchParams.get('dicomAccess') === 'evaluation-attempt'
+  );
+};
+
 export default {
   'viewportOverlay.topLeft': [
     {
@@ -15,7 +27,7 @@ export default {
       label: '',
       title: 'Series description',
       condition: ({ referenceInstance }) => {
-        return referenceInstance && referenceInstance.SeriesDescription;
+        return !shouldHideStudyNames() && referenceInstance?.SeriesDescription;
       },
       contentF: ({ referenceInstance }) => referenceInstance.SeriesDescription,
     },

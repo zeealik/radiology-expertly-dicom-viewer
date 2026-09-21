@@ -3,6 +3,7 @@ import getSOPInstanceAttributes from './utils/getSOPInstanceAttributes';
 import { utils } from '@ohif/core';
 import { getIsLocked } from './utils/getIsLocked';
 import { getIsVisible } from './utils/getIsVisible';
+import getDisplayUnit from './utils/getDisplayUnit';
 const UltrasoundDirectional = {
   toAnnotation: measurement => {},
 
@@ -202,12 +203,12 @@ function getDisplayText(mappedAnnotations, displaySet, customizationService) {
   }
 
   if (isUnitless) {
-    displayText.primary.push(`${utils.roundNumber(xValues[0], 2)} ${units[0]}`);
+    displayText.primary.push(`${utils.roundNumber(xValues[0], 2)} ${getDisplayUnit(units[0])}`);
   } else {
     const dist1 = Math.abs(xValues[1] - xValues[0]);
     const dist2 = Math.abs(yValues[1] - yValues[0]);
-    displayText.primary.push(`${utils.roundNumber(dist1)} ${units[0]}`);
-    displayText.primary.push(`${utils.roundNumber(dist2)} ${units[1]}`);
+    displayText.primary.push(`${utils.roundNumber(dist1)} ${getDisplayUnit(units[0])}`);
+    displayText.primary.push(`${utils.roundNumber(dist2)} ${getDisplayUnit(units[1])}`);
   }
 
   displayText.secondary.push(seriesText);
