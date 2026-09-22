@@ -75,6 +75,11 @@ export default async function init({
     rendering: {
       ...cornerstone.getConfiguration().rendering,
       strictZSpacingForVolumeViewport: appConfig.strictZSpacingForVolumeViewport,
+      // A host page (the pilot study attempt) can embed several viewers at once, and
+      // same-site frames share one renderer process that Chrome caps at 16 live WebGL
+      // contexts, dropping the oldest (a black viewport). The default pool of 7 per
+      // viewer exhausts that with three frames, so an embedded viewer takes one.
+      ...(window.self !== window.top ? { webGlContextCount: 1 } : {}),
     },
   });
 
