@@ -5,6 +5,13 @@ import isSeriesFilterUsed from '../../utils/isSeriesFilterUsed';
 const { getSplitParam } = utils;
 
 /**
+ * Dispatched on `window` when none of the requested studies has a single series, so
+ * nothing will ever be prefetched. Lets a host waiting on preload progress (the pilot
+ * study attempt) stop waiting instead of hanging at 0% on a missing study.
+ */
+export const DICOM_STUDY_WITHOUT_SERIES_EVENT = 'radiology-expertly:dicom-study-without-series';
+
+/**
  * Initialize the route.
  *
  * @param props.servicesManager to read services from
@@ -13,6 +20,7 @@ const { getSplitParam } = utils;
  * @param props.filters filters from query params to read the data from
  * @returns array of subscriptions to cancel
  */
+
 export async function defaultRouteInit(
   {
     servicesManager,
@@ -52,9 +60,13 @@ export async function defaultRouteInit(
 
     // run the hanging protocol matching on the displaySets with the predefined
     // hanging protocol in the mode configuration
-    hangingProtocolService.run({ studies, activeStudy, displaySets: sortedDisplaySets }, hangingProtocolId, {
-      stageIndex,
-    });
+    hangingProtocolService.run(
+      { studies, activeStudy, displaySets: sortedDisplaySets },
+      hangingProtocolId,
+      {
+        stageIndex,
+      }
+    );
   }
 
   const unsubscriptions = [];
@@ -120,6 +132,16 @@ export async function defaultRouteInit(
 
   await Promise.allSettled(allRetrieves).then(async promises => {
     log.timeEnd(Enums.TimingEnum.STUDY_TO_DISPLAY_SETS);
+
+    const seriesCount = promises.reduce(
+      (count, promise) =>
+        count +
+        (promise.status === 'fulfilled' && Array.isArray(promise.value) ? promise.value.length : 0),
+      0
+    );
+    if (seriesCount === 0) {
+      window.dispatchEvent(new CustomEvent(DICOM_STUDY_WITHOUT_SERIES_EVENT));
+    }
     log.time(Enums.TimingEnum.DISPLAY_SETS_TO_FIRST_IMAGE);
     log.time(Enums.TimingEnum.DISPLAY_SETS_TO_ALL_IMAGES);
 

@@ -7,6 +7,7 @@ import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter, type BrowserRouterProps } from 'react-router-dom';
 
 import Compose from './routes/Mode/Compose';
+import { DICOM_STUDY_WITHOUT_SERIES_EVENT } from './routes/Mode/defaultRouteInit';
 import {
   ExtensionManager,
   CommandsManager,
@@ -85,8 +86,16 @@ function DicomPreloadProgressBridge({ servicesManager }) {
       return;
     }
 
+    let hasNoSeries = false;
+
     const publishProgress = () => {
-      const progress = studyPrefetcherService.getAggregateLoadingProgress();
+      const aggregateProgress = studyPrefetcherService.getAggregateLoadingProgress();
+      // With no series there is nothing to prefetch, and the prefetcher never reports
+      // complete for zero images; report it done so the host does not wait forever.
+      const progress =
+        hasNoSeries && aggregateProgress.totalImages === 0
+          ? { ...aggregateProgress, progress: 1, isComplete: true }
+          : aggregateProgress;
 
       if (shouldShowLocalProgress) {
         setLocalProgress(progress);
@@ -105,6 +114,12 @@ function DicomPreloadProgressBridge({ servicesManager }) {
 
     publishProgress();
 
+    const handleStudyWithoutSeries = () => {
+      hasNoSeries = true;
+      publishProgress();
+    };
+    window.addEventListener(DICOM_STUDY_WITHOUT_SERIES_EVENT, handleStudyWithoutSeries);
+
     const subscriptions = [
       studyPrefetcherService.subscribe(
         studyPrefetcherService.EVENTS.SERVICE_STARTED,
@@ -121,6 +136,7 @@ function DicomPreloadProgressBridge({ servicesManager }) {
     ];
 
     return () => {
+      window.removeEventListener(DICOM_STUDY_WITHOUT_SERIES_EVENT, handleStudyWithoutSeries);
       subscriptions.forEach(subscription => subscription.unsubscribe());
     };
   }, [servicesManager]);
