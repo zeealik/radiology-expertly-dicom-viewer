@@ -35,7 +35,7 @@ const ENTRY_TARGET = process.env.ENTRY_TARGET || `${SRC_DIR}/index.js`;
 const Dotenv = require('dotenv-webpack');
 const writePluginImportFile = require('./writePluginImportsFile.js');
 // const MillionLint = require('@million/lint');
-const open = process.env.OHIF_OPEN !== 'false';
+const open = process.env.OHIF_OPEN === 'true';
 
 const copyPluginFromExtensions = writePluginImportFile(SRC_DIR, DIST_DIR);
 
