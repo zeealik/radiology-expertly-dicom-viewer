@@ -1,104 +1,110 @@
-// https://developers.google.com/web/tools/workbox/guides/troubleshoot-and-debug
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
+// The viewer's service worker exists to make re-opening a study fast: the viewer is
+// embedded by iframe in the review and pilot-study apps, and every mount used to
+// re-download every frame.
+//
+// Workbox is bundled from node_modules (not importScripts from Google's CDN): that
+// host is unreachable from some networks, and when it fails the worker never
+// installs, which silently turned the whole DICOM cache off.
+import { clientsClaim } from 'workbox-core';
+import { registerRoute } from 'workbox-routing';
+import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { createDicomPixelCache } from './serviceWorker/dicomPixelCache';
 
-// Install newest
-// https://developers.google.com/web/tools/workbox/modules/workbox-core
-self.skipWaiting();
-workbox.core.clientsClaim();
-
-const DICOM_RESPONSE_CACHE = 'radiology-dicom-responses-v1';
-const DICOM_CACHEABLE_ORIGINS = new Set([
+const DICOM_PIXEL_CACHE = 'radiology-dicom-pixels-v2';
+const DICOM_PIXEL_DB = 'radiology-dicom-pixels';
+const APP_ASSET_CACHE = 'radiology-viewer-assets-v1';
+const DICOM_ORIGINS = [
   'https://api-viewer.radiologyexpertly.com',
   'https://api.radiologyexpertly.com',
-]);
+];
 
-const isDicomPixelRequest = ({ request, url }) => {
-  if (request.method !== 'GET' || !DICOM_CACHEABLE_ORIGINS.has(url.origin)) {
-    return false;
-  }
+// Caches written by earlier versions of this worker. The precache alone held about
+// 160 MB of bundles, wasm and source maps the viewer never loads.
+const LEGACY_CACHE_NAMES = ['radiology-dicom-responses-v1', 'static-resources'];
+const LEGACY_CACHE_PREFIXES = ['workbox-precache'];
 
-  const pathname = url.pathname.toLowerCase();
-  if (pathname.includes('/orthanc/wado')) {
-    return url.searchParams.get('requestType')?.toUpperCase() === 'WADO';
-  }
+// Precaching is deliberately off. It downloaded the whole build on first visit and
+// again on every deploy, competing with DICOM downloads, and on a slow link the
+// install could fail outright. Hashed bundles are cached as they are used instead.
+// The manifest reference must stay so InjectManifest has its injection point.
+void self.__WB_MANIFEST;
 
-  const isDicomWebPath =
-    pathname.includes('/dicom-web/') || pathname.includes('/orthanc/dicom-web/');
-  const retrievesInstance = pathname.includes('/instances/');
+self.skipWaiting();
+clientsClaim();
 
-  return isDicomWebPath && retrievesInstance;
-};
+const dicomPixelCache = createDicomPixelCache({
+  cacheName: DICOM_PIXEL_CACHE,
+  dbName: DICOM_PIXEL_DB,
+  origins: DICOM_ORIGINS,
+});
 
-// Cache static assets that aren't precached
-workbox.routing.registerRoute(
-  /\.(?:js|css|json5)$/,
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: 'static-resources',
-  })
+registerRoute(dicomPixelCache.matches, ({ request, event }) =>
+  dicomPixelCache.respond(request, event)
 );
 
-// Cache the Google Fonts stylesheets with a stale-while-revalidate strategy.
-workbox.routing.registerRoute(
-  /^https:\/\/fonts\.googleapis\.com/,
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: 'google-fonts-stylesheets',
-  })
-);
-
-// Cache the underlying font files with a cache-first strategy for 1 year.
-workbox.routing.registerRoute(
-  /^https:\/\/fonts\.gstatic\.com/,
-  new workbox.strategies.CacheFirst({
-    cacheName: 'google-fonts-webfonts',
+// Content-hashed bundles and wasm never change under the same name, so they are
+// served from cache with no revalidation round trip.
+const HASHED_APP_ASSET = /(?:\.[0-9a-f]{16,}\.(?:js|css)|\/[0-9a-f]{16,}\.wasm)$/i;
+registerRoute(
+  ({ request, url }) =>
+    request.method === 'GET' &&
+    url.origin === self.location.origin &&
+    HASHED_APP_ASSET.test(url.pathname),
+  new CacheFirst({
+    cacheName: APP_ASSET_CACHE,
     plugins: [
-      new workbox.cacheableResponse.CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new workbox.expiration.ExpirationPlugin({
-        maxAgeSeconds: 60 * 60 * 24 * 365, // 1 Year
-        maxEntries: 30,
-      }),
-    ],
-  })
-);
-
-// Cache immutable DICOM pixel payloads across refreshes so a candidate does not
-// have to download the full case again after the browser reloads the viewer.
-workbox.routing.registerRoute(
-  isDicomPixelRequest,
-  new workbox.strategies.CacheFirst({
-    cacheName: DICOM_RESPONSE_CACHE,
-    plugins: [
-      new workbox.cacheableResponse.CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new workbox.expiration.ExpirationPlugin({
-        maxAgeSeconds: 60 * 60 * 24,
-        maxEntries: 4000,
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({
+        maxEntries: 200,
+        maxAgeSeconds: 60 * 60 * 24 * 30,
         purgeOnQuotaError: true,
       }),
     ],
   })
 );
 
-// MESSAGE HANDLER
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    switch (event.data.type) {
-      case 'SKIP_WAITING':
-        self.skipWaiting();
-        break;
+registerRoute(
+  /^https:\/\/fonts\.googleapis\.com/,
+  new StaleWhileRevalidate({ cacheName: 'google-fonts-stylesheets' })
+);
 
-      default:
-        console.warn(`SW: Invalid message type: ${event.data.type}`);
-    }
-  }
+registerRoute(
+  /^https:\/\/fonts\.gstatic\.com/,
+  new CacheFirst({
+    cacheName: 'google-fonts-webfonts',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxAgeSeconds: 60 * 60 * 24 * 365, maxEntries: 30 }),
+    ],
+  })
+);
+
+async function deleteLegacyCaches() {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter(
+        name =>
+          LEGACY_CACHE_NAMES.includes(name) ||
+          LEGACY_CACHE_PREFIXES.some(prefix => name.startsWith(prefix))
+      )
+      .map(name => caches.delete(name))
+  );
+}
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    Promise.all([
+      deleteLegacyCaches(),
+      dicomPixelCache.maintain().catch(error => console.warn('DICOM cache maintenance', error)),
+    ])
+  );
 });
 
-workbox.precaching.precacheAndRoute(self.__WB_MANIFEST);
-
-// TODO: Cache API
-// https://developers.google.com/web/fundamentals/instant-and-offline/web-storage/cache-api
-// Store DICOMs?
-// Clear Service Worker cache?
-// navigator.storage.estimate().then(est => console.log(est)); (2GB?)
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});

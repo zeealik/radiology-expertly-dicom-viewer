@@ -138,10 +138,10 @@ module.exports = (env, argv) => {
             new InjectManifest({
               swDest: 'sw.js',
               swSrc: path.join(SRC_DIR, 'service-worker.js'),
-              // Need to exclude the theme as it is updated independently
-              exclude: [/theme/],
-              // Cache large files for the manifests to avoid warning messages
-              maximumFileSizeToCacheInBytes: 1024 * 1024 * 50,
+              // Nothing is precached: the worker caches DICOM pixels and hashed bundles
+              // on use (see service-worker.js). An empty manifest also keeps sw.js
+              // byte-identical across deploys, so a deploy no longer re-installs it.
+              exclude: [/./],
             }),
           ]),
     ],

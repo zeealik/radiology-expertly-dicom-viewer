@@ -8,18 +8,13 @@
     return;
   }
 
-  var refreshing = false;
   var swFileLocation = (window.PUBLIC_URL || '/') + 'sw.js';
 
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (refreshing) {
-      return;
-    }
-
-    refreshing = true;
-    window.location.reload();
-  });
-
+  // No reload on `controllerchange`. The worker only caches DICOM pixels and
+  // content-hashed bundles; it never serves a different app version, so a new
+  // worker can take over a running viewer safely. The old reload restarted every
+  // embedded viewer on first visit and after every deploy, mid-review, and threw
+  // away the frames it had just downloaded.
   window.addEventListener('load', function () {
     navigator.serviceWorker
       .register(swFileLocation)
@@ -27,19 +22,6 @@
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
-
-        registration.addEventListener('updatefound', function () {
-          var newWorker = registration.installing;
-          if (!newWorker) {
-            return;
-          }
-
-          newWorker.addEventListener('statechange', function () {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-            }
-          });
-        });
       })
       .catch(function (error) {
         console.warn('Service worker registration failed:', error);
