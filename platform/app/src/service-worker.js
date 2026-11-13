@@ -14,7 +14,6 @@ import { createDicomPixelCache } from './serviceWorker/dicomPixelCache';
 
 const DICOM_PIXEL_CACHE = 'radiology-dicom-pixels-v2';
 const DICOM_PIXEL_DB = 'radiology-dicom-pixels';
-const APP_ASSET_CACHE = 'radiology-viewer-assets-v1';
 const DICOM_ORIGINS = [
   'https://api-viewer.radiologyexpertly.com',
   'https://api.radiologyexpertly.com',
@@ -22,12 +21,20 @@ const DICOM_ORIGINS = [
 
 // Caches written by earlier versions of this worker. The precache alone held about
 // 160 MB of bundles, wasm and source maps the viewer never loads.
-const LEGACY_CACHE_NAMES = ['radiology-dicom-responses-v1', 'static-resources'];
+// `radiology-viewer-assets-v1` held the app's own bundles, served cache-first. With
+// the bundles coming from that cache the app stopped part-way through start-up
+// (black page, no error) on every load after the first, so the route is gone and the
+// cache is dropped on activation. The browser's HTTP cache serves the bundles.
+const LEGACY_CACHE_NAMES = [
+  'radiology-dicom-responses-v1',
+  'static-resources',
+  'radiology-viewer-assets-v1',
+];
 const LEGACY_CACHE_PREFIXES = ['workbox-precache'];
 
 // Precaching is deliberately off. It downloaded the whole build on first visit and
 // again on every deploy, competing with DICOM downloads, and on a slow link the
-// install could fail outright. Hashed bundles are cached as they are used instead.
+// install could fail outright. The app's own files are never served by this worker.
 // The manifest reference must stay so InjectManifest has its injection point.
 void self.__WB_MANIFEST;
 
@@ -42,27 +49,6 @@ const dicomPixelCache = createDicomPixelCache({
 
 registerRoute(dicomPixelCache.matches, ({ request, event }) =>
   dicomPixelCache.respond(request, event)
-);
-
-// Content-hashed bundles and wasm never change under the same name, so they are
-// served from cache with no revalidation round trip.
-const HASHED_APP_ASSET = /(?:\.[0-9a-f]{16,}\.(?:js|css)|\/[0-9a-f]{16,}\.wasm)$/i;
-registerRoute(
-  ({ request, url }) =>
-    request.method === 'GET' &&
-    url.origin === self.location.origin &&
-    HASHED_APP_ASSET.test(url.pathname),
-  new CacheFirst({
-    cacheName: APP_ASSET_CACHE,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({
-        maxEntries: 200,
-        maxAgeSeconds: 60 * 60 * 24 * 30,
-        purgeOnQuotaError: true,
-      }),
-    ],
-  })
 );
 
 registerRoute(

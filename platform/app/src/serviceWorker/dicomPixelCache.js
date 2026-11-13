@@ -25,6 +25,7 @@ const ACCEPT_KEY_PARAM = '__re_accept';
 const TOUCH_FLUSH_DELAY_MS = 2000;
 const BUDGET_SHARE_OF_QUOTA = 0.5;
 const EVICT_DOWN_TO = 0.85;
+const INFLIGHT_WAIT_MS = 10000;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GB = 1024 * 1024 * 1024;
@@ -341,7 +342,10 @@ export function createDicomPixelCache({
     // wait for the download already in flight instead of starting a second one.
     const pending = inflight.get(key);
     if (pending) {
-      await pending;
+      // Bounded: the first request settles only once its frame is stored, and a
+      // stalled Cache or IndexedDB write must never leave this frame (and the
+      // viewer's preload, which waits for every frame) hanging.
+      await Promise.race([pending, new Promise(resolve => setTimeout(resolve, INFLIGHT_WAIT_MS))]);
       const shared = await matchFresh(cache, key).catch(() => undefined);
       if (shared) {
         touch(key, event);
