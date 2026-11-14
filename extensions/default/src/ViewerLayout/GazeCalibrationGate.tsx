@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import HeadTrackingOverlay from './HeadTrackingOverlay';
+import { GAZE_TRACKING_ENABLED } from './gazeTrackingConfig';
 
 const CALIB_STORAGE_PREFIX = 'ohif.gazeCalibration:';
 const CALIB_EVENT = 'ohif-gaze-calibration';
@@ -82,6 +83,9 @@ function markCalibrated(uids: string[]) {
 // Start head tracking and anchor its safe zone to the just-calibrated posture.
 // Fully soft — never throws, never blocks the study if the camera/model is down.
 function anchorHeadTrackingBaseline() {
+  if (!GAZE_TRACKING_ENABLED) {
+    return;
+  }
   void (async () => {
     try {
       await window.OHIFHeadTracking?.start?.();
@@ -141,12 +145,15 @@ export function useGazeCalibrationStatus(uids: string[]): boolean {
 }
 
 type GazeCalibrationGateProps = {
+  /** When false, the gate is a pass-through: no calibration overlay, no camera. */
+  enabled?: boolean;
   studyInstanceUIDs: string[];
   calibrationSessionId?: string;
   children: React.ReactNode;
 };
 
 function GazeCalibrationGate({
+  enabled = true,
   studyInstanceUIDs,
   calibrationSessionId,
   children,
@@ -402,6 +409,10 @@ function GazeCalibrationGate({
       }
     };
   }, [phase, failCalibration, finishCalibration]);
+
+  if (!enabled) {
+    return <>{children}</>;
+  }
 
   if (phase === 'success') {
     return (

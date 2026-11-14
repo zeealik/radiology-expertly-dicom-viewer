@@ -69,6 +69,7 @@ import {
   installHeadTracking,
   uninstallHeadTracking,
 } from '@ohif/extension-default/src/ViewerLayout/headTracking';
+import { GAZE_TRACKING_ENABLED } from '@ohif/extension-default/src/ViewerLayout/gazeTrackingConfig';
 import update from 'immutability-helper';
 export * from './components';
 
@@ -123,7 +124,8 @@ const cornerstoneExtension: Types.Extensions.Extension = {
 
   onModeEnter: ({ servicesManager, commandsManager, extensionManager }: withAppTypes): void => {
     installGazeCaptureBridge();
-    if (!isEvaluationDicomAccess()) {
+    // Camera-based tracking is off on this branch — never prompt for webcam access.
+    if (GAZE_TRACKING_ENABLED && !isEvaluationDicomAccess()) {
       installEyeGesturesBrowserClient();
       installHeadTracking();
     }

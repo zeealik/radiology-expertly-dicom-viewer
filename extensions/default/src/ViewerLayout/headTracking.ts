@@ -16,6 +16,7 @@ import {
 } from './headTrackingMath';
 
 export * from './headTrackingMath';
+import { GAZE_TRACKING_ENABLED } from './gazeTrackingConfig';
 
 // ---------------------------------------------------------------------------
 // Runtime (browser-only): own webcam stream + MediaPipe FaceLandmarker loop.
@@ -349,7 +350,7 @@ async function start(): Promise<void> {
   if (typeof window === 'undefined' || starting || running) {
     return;
   }
-  if (!isEnabled()) {
+  if (!GAZE_TRACKING_ENABLED || !isEnabled()) {
     setUnknown('Head tracking disabled.');
     return;
   }

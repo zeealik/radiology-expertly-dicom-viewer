@@ -1,3 +1,4 @@
+import { GAZE_TRACKING_ENABLED } from '@ohif/extension-default/src/ViewerLayout/gazeTrackingConfig';
 type EyeGesturesStatus = 'connected' | 'disconnected' | 'waiting' | 'calibrating';
 
 type EyeGesturesBrowserClientOptions = {
@@ -308,6 +309,11 @@ function handleGaze(point: [number, number], calibration?: boolean) {
 
 async function connect() {
   if (connecting || gestures || typeof window === 'undefined') {
+    return;
+  }
+
+  if (!GAZE_TRACKING_ENABLED) {
+    dispatchStatus('disconnected', 'Gaze tracking is disabled on this build.');
     return;
   }
 

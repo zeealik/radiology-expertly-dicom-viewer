@@ -13,6 +13,7 @@ import StudyFeedbackPage from './StudyFeedbackPage';
 import StudyQuestionPanel from './StudyQuestionPanel';
 import StudyReviewPanel, { StudyReviewHeatmapOverlay } from './StudyReviewPanel';
 import GazeCalibrationGate from './GazeCalibrationGate';
+import { GAZE_TRACKING_ENABLED } from './gazeTrackingConfig';
 import {
   getStudyInstanceUIDs,
   isAnnotationTool,
@@ -1000,6 +1001,7 @@ function ViewerLayout({
                   </div>
                 ) : (
                   <GazeCalibrationGate
+                    enabled={GAZE_TRACKING_ENABLED}
                     studyInstanceUIDs={studyInstanceUIDs}
                     calibrationSessionId={calibrationSessionId}
                   >
