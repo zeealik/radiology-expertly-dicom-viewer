@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useLocation } from 'react-router';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
@@ -10,6 +10,12 @@ import ViewportGrid from '@components/ViewportGrid';
 import Compose from './Compose';
 import loadModules from '../../pluginImports';
 import { defaultRouteInit } from './defaultRouteInit';
+import {
+  BOOT_ERROR_COPY,
+  failBoot,
+  markBootReady,
+  markStudyRouteMounted,
+} from '../../utils/bootScreen';
 import {
   restoreStoredDicomAccessToken,
   updateAuthServiceAndCleanUrl,
@@ -127,7 +133,12 @@ export default function ModeRoute({
   // These are rendered as component types below. Recreating them during a route
   // update unmounts the viewport and destroys its Cornerstone instance.
   const ViewportGridWithDataSource = useCallback(
-    props => <ViewportGrid {...props} dataSource={dataSource} />,
+    props => (
+      <ViewportGrid
+        {...props}
+        dataSource={dataSource}
+      />
+    ),
     [dataSource]
   );
   const CombinedExtensionsContextProvider = useMemo(
@@ -137,6 +148,13 @@ export default function ModeRoute({
 
   // Only handling one route per mode for now
   const route = mode.routes?.[0] ?? null;
+
+  useLayoutEffect(() => {
+    markStudyRouteMounted();
+    // If the route goes away before images load (not found, error boundary, ...),
+    // let whatever replaced it be seen.
+    return () => markBootReady();
+  }, []);
 
   useEffect(() => {
     const loadExtensions = async () => {
@@ -153,7 +171,7 @@ export default function ModeRoute({
       }
     };
 
-    loadExtensions();
+    loadExtensions().catch(error => failBoot(BOOT_ERROR_COPY.appStart, error));
   }, []);
 
   useEffect(() => {
@@ -175,10 +193,15 @@ export default function ModeRoute({
         params,
         query,
       });
-      setStudyInstanceUIDs(dataSource.getStudyInstanceUIDs({ params, query }));
+      const uids = dataSource.getStudyInstanceUIDs({ params, query });
+      if (!uids?.length) {
+        // Nothing to load, so nothing will ever hide the boot screen.
+        markBootReady();
+      }
+      setStudyInstanceUIDs(uids);
     };
 
-    initializeDataSource(params, query);
+    initializeDataSource(params, query).catch(error => failBoot(BOOT_ERROR_COPY.caseLoad, error));
     return () => {
       layoutTemplateData.current = null;
     };
@@ -211,7 +234,9 @@ export default function ModeRoute({
             return;
           }
         } catch (error) {
-          console.error('Error validating study:', studyInstanceUID, error);
+          // A failed lookup is usually the connection, not a missing study: show the
+          // connection error while starting up; the error stays over the redirect.
+          failBoot(BOOT_ERROR_COPY.caseLoad, error);
           navigate('/notfoundstudy');
           return;
         }
@@ -254,7 +279,7 @@ export default function ModeRoute({
       }
     };
     if (Array.isArray(studyInstanceUIDs) && studyInstanceUIDs[0]) {
-      retrieveLayoutData();
+      retrieveLayoutData().catch(error => failBoot(BOOT_ERROR_COPY.appStart, error));
     }
     return () => {
       layoutTemplateData.current = null;
@@ -373,15 +398,17 @@ export default function ModeRoute({
     };
 
     let unsubscriptions;
-    setupRouteInit().then(unsubs => {
-      unsubscriptions = unsubs;
+    setupRouteInit()
+      .then(unsubs => {
+        unsubscriptions = unsubs;
 
-      mode?.onSetupRouteComplete?.({
-        servicesManager,
-        extensionManager,
-        commandsManager,
-      });
-    });
+        mode?.onSetupRouteComplete?.({
+          servicesManager,
+          extensionManager,
+          commandsManager,
+        });
+      })
+      .catch(error => failBoot(BOOT_ERROR_COPY.caseLoad, error));
 
     return () => {
       // The mode.onModeExit must be done first to allow it to store

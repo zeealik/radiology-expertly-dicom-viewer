@@ -17,27 +17,32 @@ import React from 'react';
  */
 import { modes as defaultModes, extensions as defaultExtensions } from './pluginImports';
 import loadDynamicConfig from './loadDynamicConfig';
+import { BOOT_ERROR_COPY, failBoot } from './utils/bootScreen';
 export { history } from './utils/history';
 export { preserveQueryParameters, preserveQueryStrings } from './utils/preserveQueryParameters';
 
-loadDynamicConfig(window.config).then(config_json => {
-  // Reset Dynamic config if defined
-  if (config_json !== null) {
-    window.config = config_json;
-  }
+loadDynamicConfig(window.config)
+  .then(config_json => {
+    // Reset Dynamic config if defined
+    if (config_json !== null) {
+      window.config = config_json;
+    }
 
-  /**
-   * Combine our appConfiguration with installed extensions and modes.
-   * In the future appConfiguration may contain modes added at runtime.
-   *  */
-  const appProps = {
-    config: window ? window.config : {},
-    defaultExtensions,
-    defaultModes,
-  };
+    /**
+     * Combine our appConfiguration with installed extensions and modes.
+     * In the future appConfiguration may contain modes added at runtime.
+     *  */
+    const appProps = {
+      config: window ? window.config : {},
+      defaultExtensions,
+      defaultModes,
+    };
 
-  const container = document.getElementById('root');
+    const container = document.getElementById('root');
 
-  const root = createRoot(container);
-  root.render(React.createElement(App, appProps));
-});
+    const root = createRoot(container);
+    root.render(React.createElement(App, appProps));
+  })
+  .catch(error => {
+    failBoot(BOOT_ERROR_COPY.appStart, error);
+  });

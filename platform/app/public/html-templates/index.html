@@ -59,6 +59,267 @@
       }
     </script>
 
+    <!--
+      Boot screen: visible from first paint until the app reports the viewer is ready
+      (platform/app/src/utils/bootScreen.ts). Plain HTML/CSS so it works while the
+      bundle is still downloading on a slow connection.
+    -->
+    <style>
+      .re-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: #f3f6f5;
+        color: #172327;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        transition: opacity 240ms ease;
+      }
+      html.dark .re-boot {
+        background: #10171c;
+        color: #e3e8ea;
+      }
+      .re-boot.is-done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .re-boot [hidden] {
+        display: none !important;
+      }
+      .re-boot__panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        max-width: 360px;
+        text-align: center;
+      }
+      .re-boot__spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(47, 191, 172, 0.22);
+        border-top-color: #2fbfac;
+        border-radius: 50%;
+        animation: re-boot-spin 0.9s linear infinite;
+      }
+      .re-boot__icon {
+        width: 36px;
+        height: 36px;
+        color: #e0694f;
+      }
+      .re-boot__title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+      .re-boot__detail {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: #56666c;
+      }
+      html.dark .re-boot__detail {
+        color: #98a6ac;
+      }
+      .re-boot__button {
+        min-height: 40px;
+        margin-top: 4px;
+        padding: 8px 18px;
+        border: 1px solid rgba(47, 191, 172, 0.55);
+        border-radius: 8px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .re-boot.is-failed .re-boot__button {
+        border-color: transparent;
+        background: #2fbfac;
+        color: #0b1215;
+      }
+      @keyframes re-boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .re-boot {
+          transition: none;
+        }
+        .re-boot__spinner {
+          animation-duration: 2.4s;
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        var SLOW_AFTER_MS = 12000;
+        var VERY_SLOW_AFTER_MS = 40000;
+        var SLOW_DETAIL =
+          'This is taking longer than usual. A slow or unstable internet connection can delay loading.';
+        var VERY_SLOW_DETAIL =
+          'Still loading. Check your internet connection, then reload if nothing changes.';
+        var OFFLINE_DETAIL =
+          "You're offline. Loading will continue when your connection is back.";
+        var LOAD_FAILED = {
+          title: "The viewer couldn't load",
+          message: 'Part of the viewer failed to download. Check your internet connection and try again.',
+        };
+
+        var state = 'loading';
+        var slowLevel = 0;
+        var timers = [];
+
+        function node(id) {
+          return document.getElementById(id);
+        }
+        function setText(id, text) {
+          var el = node(id);
+          if (el) {
+            el.textContent = text;
+          }
+        }
+        function setHidden(id, hidden) {
+          var el = node(id);
+          if (el) {
+            el.hidden = hidden;
+          }
+        }
+
+        function renderDetail() {
+          if (state !== 'loading') {
+            return;
+          }
+          var detail = '';
+          if (navigator.onLine === false) {
+            detail = OFFLINE_DETAIL;
+          } else if (slowLevel === 2) {
+            detail = VERY_SLOW_DETAIL;
+          } else if (slowLevel === 1) {
+            detail = SLOW_DETAIL;
+          }
+          setText('re-boot-detail', detail);
+          setHidden('re-boot-detail', !detail);
+          setHidden('re-boot-retry', !detail);
+        }
+
+        function clearTimers() {
+          timers.forEach(clearTimeout);
+          timers = [];
+        }
+
+        function setMessage(message) {
+          if (state === 'loading' && message) {
+            setText('re-boot-title', message);
+          }
+        }
+
+        function ready() {
+          if (state !== 'loading') {
+            return;
+          }
+          state = 'ready';
+          clearTimers();
+          var root = node('re-boot');
+          if (!root) {
+            return;
+          }
+          root.classList.add('is-done');
+          setTimeout(function () {
+            if (root.parentNode) {
+              root.parentNode.removeChild(root);
+            }
+          }, 300);
+        }
+
+        function fail(title, message) {
+          if (state !== 'loading') {
+            return;
+          }
+          state = 'failed';
+          clearTimers();
+          var root = node('re-boot');
+          if (root) {
+            root.classList.add('is-failed');
+            root.setAttribute('role', 'alert');
+          }
+          setHidden('re-boot-spinner', true);
+          setHidden('re-boot-icon', false);
+          setText('re-boot-title', title);
+          setText('re-boot-detail', message);
+          setHidden('re-boot-detail', false);
+          setText('re-boot-retry', 'Try again');
+          setHidden('re-boot-retry', false);
+        }
+
+        window.__radiologyExpertlyBoot = { setMessage: setMessage, ready: ready, fail: fail };
+
+        timers.push(
+          setTimeout(function () {
+            slowLevel = 1;
+            renderDetail();
+          }, SLOW_AFTER_MS),
+          setTimeout(function () {
+            slowLevel = 2;
+            renderDetail();
+          }, VERY_SLOW_AFTER_MS)
+        );
+        window.addEventListener('online', renderDetail);
+        window.addEventListener('offline', renderDetail);
+
+        document.addEventListener('click', function (event) {
+          var target = event.target;
+          if (target && target.closest && target.closest('#re-boot-retry')) {
+            window.location.reload();
+          }
+        });
+
+        // A same-origin script or stylesheet that fails to download during start-up
+        // (dropped connection, timeout) leaves the app unable to boot.
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target;
+            if (state !== 'loading' || !target || target === window) {
+              return;
+            }
+            var url = target.src || target.href || '';
+            var isAppAsset =
+              (target.tagName === 'SCRIPT' ||
+                (target.tagName === 'LINK' && target.rel === 'stylesheet')) &&
+              url.indexOf(window.location.origin) === 0 &&
+              url.indexOf('init-service-worker') === -1;
+            if (isAppAsset) {
+              fail(LOAD_FAILED.title, LOAD_FAILED.message);
+            }
+          },
+          true
+        );
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason || {};
+          var text = String(reason.message || '');
+          if (
+            state === 'loading' &&
+            (reason.name === 'ChunkLoadError' ||
+              /Loading (CSS )?chunk|dynamically imported module|Importing a module script failed/i.test(
+                text
+              ))
+          ) {
+            fail(LOAD_FAILED.title, LOAD_FAILED.message);
+          }
+        });
+      })();
+    </script>
+
     <script
       rel="preload"
       as="script"
@@ -103,5 +364,54 @@
     <noscript> You need to enable JavaScript to run this app. </noscript>
     <div id="react-portal"></div>
     <div id="root"></div>
+    <div
+      id="re-boot"
+      class="re-boot"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="re-boot__panel">
+        <div
+          id="re-boot-spinner"
+          class="re-boot__spinner"
+          aria-hidden="true"
+        ></div>
+        <svg
+          id="re-boot-icon"
+          class="re-boot__icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          hidden
+        >
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 7.5v5.5" />
+          <path d="M12 16.5h.01" />
+        </svg>
+        <p
+          id="re-boot-title"
+          class="re-boot__title"
+        >
+          Loading viewer…
+        </p>
+        <p
+          id="re-boot-detail"
+          class="re-boot__detail"
+          hidden
+        ></p>
+        <button
+          id="re-boot-retry"
+          class="re-boot__button"
+          type="button"
+          hidden
+        >
+          Reload
+        </button>
+      </div>
+    </div>
   </body>
 </html>

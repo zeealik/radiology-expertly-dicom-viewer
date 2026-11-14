@@ -1,6 +1,7 @@
 import { DicomMetadataStore, log, utils, Enums } from '@ohif/core';
 import getStudies from './studiesList';
 import isSeriesFilterUsed from '../../utils/isSeriesFilterUsed';
+import { BOOT_ERROR_COPY, failBoot, markBootReady } from '../../utils/bootScreen';
 
 const { getSplitParam } = utils;
 
@@ -142,6 +143,18 @@ export async function defaultRouteInit(
     if (seriesCount === 0) {
       window.dispatchEvent(new CustomEvent(DICOM_STUDY_WITHOUT_SERIES_EVENT));
     }
+
+    const firstFailure = promises.find(promise => promise.status === 'rejected');
+    if (firstFailure && promises.every(promise => promise.status === 'rejected')) {
+      // Every metadata request failed (offline, timeout, server error): without this the
+      // viewer sits empty with the error only in the console.
+      failBoot(
+        BOOT_ERROR_COPY.caseLoad,
+        firstFailure.status === 'rejected' ? firstFailure.reason : undefined
+      );
+    } else if (seriesCount === 0) {
+      markBootReady();
+    }
     log.time(Enums.TimingEnum.DISPLAY_SETS_TO_FIRST_IMAGE);
     log.time(Enums.TimingEnum.DISPLAY_SETS_TO_ALL_IMAGES);
 
@@ -175,6 +188,8 @@ export async function defaultRouteInit(
     });
 
     await Promise.allSettled(allPromises).then(applyHangingProtocol);
+    // The series needed for the first layout are in; viewports show their own image progress.
+    markBootReady();
     startRemainingPromises(remainingPromises);
     applyHangingProtocol();
   });

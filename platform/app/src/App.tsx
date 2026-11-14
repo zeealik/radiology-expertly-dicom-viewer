@@ -34,6 +34,14 @@ import {
 import { AppConfigProvider } from '@state';
 import createRoutes from './routes';
 import appInit from './appInit.js';
+import {
+  BOOT_ERROR_COPY,
+  failBoot,
+  hasStudyRouteMounted,
+  markBootReady,
+  setBootMessage,
+  urlOpensStudy,
+} from './utils/bootScreen';
 import OpenIdConnectRoutes from './utils/OpenIdConnectRoutes';
 import { ShepherdJourneyProvider } from 'react-shepherd';
 import './App.css';
@@ -257,11 +265,34 @@ function App({
   const [init, setInit] = useState(null);
   useEffect(() => {
     const run = async () => {
-      appInit(config, defaultExtensions, defaultModes).then(setInit).catch(console.error);
+      appInit(config, defaultExtensions, defaultModes)
+        .then(setInit)
+        .catch(error => failBoot(BOOT_ERROR_COPY.appStart, error));
     };
 
     run();
   }, []);
+
+  useEffect(() => {
+    if (!init) {
+      return;
+    }
+
+    if (urlOpensStudy()) {
+      setBootMessage('Loading case…');
+    }
+
+    // A study route keeps the boot screen up until its images arrive. Any other page
+    // (study list, not found, ...) is ready as soon as it has rendered. The timeout
+    // runs after the first commit, by which time a study route has mounted.
+    const timeoutId = window.setTimeout(() => {
+      if (!hasStudyRouteMounted()) {
+        markBootReady();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [init]);
 
   if (!init) {
     return null;
