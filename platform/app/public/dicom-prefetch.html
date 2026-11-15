@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="robots"
+      content="noindex"
+    />
+    <title>DICOM background download</title>
+  </head>
+  <body>
+    <!--
+      Hidden helper the review apps embed to download studies before a reviewer
+      opens them. It boots none of OHIF (no WebGL, no decoding); it only fetches
+      frames through this origin's service worker, which stores them in the same
+      pixel cache the real viewer reads. See dicom-prefetch.js.
+    -->
+    <script src="/app-config.js"></script>
+    <script src="/init-service-worker.js"></script>
+    <script src="/dicom-prefetch.js"></script>
+  </body>
+</html>
